@@ -1,5 +1,5 @@
 const ENGEMIX_LINKS = [
-  { label: "Quem somos", href: "#" },
+  { label: "Quem somos", href: "/quem-somos" },
   { label: "Nossas unidades", href: "#" },
   { label: "Nossos produtos", href: "#" },
   { label: "App Engemix", href: "#" },
@@ -22,7 +22,7 @@ export default function Footer() {
         {/* Top row: logos + social */}
         <div className="w-full flex flex-col lg:flex-row gap-8 items-center lg:justify-between">
           <a
-            href="#"
+            href="/home"
             className="flex justify-center"
             aria-label="Engemix"
             data-testid="footer-logo-engemix"

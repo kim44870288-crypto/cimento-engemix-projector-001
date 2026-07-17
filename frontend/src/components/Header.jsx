@@ -1,9 +1,10 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { Menu, X, ChevronDown } from "lucide-react";
 
 const MENU = [
-  { label: "Quem somos", href: "#" },
-  { label: "Orçamento", href: "#" },
+  { label: "Quem somos", href: "/quem-somos" },
+  { label: "Orçamento", href: "/orcamento" },
   {
     label: "Produtos",
     href: "#",
@@ -30,8 +31,8 @@ export default function Header() {
       <nav className="container mx-auto px-6 py-4 h-20 flex items-center">
         <div className="w-full flex items-center justify-between">
           {/* Logo */}
-          <a
-            href="#"
+          <Link
+            to="/home"
             data-testid="header-logo"
             aria-label="Engemix - Página Inicial"
             className="flex items-center"
@@ -42,7 +43,7 @@ export default function Header() {
               title="Engemix - Voltar para a página inicial"
               className="w-40 h-10 lg:w-56 lg:h-14 object-contain"
             />
-          </a>
+          </Link>
 
           {/* Desktop menu */}
           <ul className="hidden lg:flex items-center gap-6">
@@ -94,15 +95,15 @@ export default function Header() {
                 </li>
               ) : (
                 <li key={item.label}>
-                  <a
-                    href={item.href}
+                  <Link
+                    to={item.href}
                     data-testid={`menu-${item.label
                       .toLowerCase()
                       .replace(/\s+/g, "-")}`}
                     className="text-white text-base font-medium hover:text-gray-200 transition"
                   >
                     {item.label}
-                  </a>
+                  </Link>
                 </li>
               )
             )}
@@ -168,8 +169,8 @@ export default function Header() {
                 </li>
               ) : (
                 <li key={item.label} className="border-b border-white/10">
-                  <a
-                    href={item.href}
+                  <Link
+                    to={item.href}
                     onClick={() => setOpen(false)}
                     className="block px-6 py-3 text-white font-medium hover:bg-black/20"
                     data-testid={`mmenu-${item.label
@@ -177,7 +178,7 @@ export default function Header() {
                       .replace(/\s+/g, "-")}`}
                   >
                     {item.label}
-                  </a>
+                  </Link>
                 </li>
               )
             )}

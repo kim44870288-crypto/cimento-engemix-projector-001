@@ -1,6 +1,8 @@
 import "@/App.css";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Home from "@/pages/Home";
+import QuemSomos from "@/pages/QuemSomos";
+import Orcamento from "@/pages/Orcamento";
 
 function App() {
   return (
@@ -9,6 +11,9 @@ function App() {
         <Routes>
           <Route path="/" element={<Navigate to="/home" replace />} />
           <Route path="/home" element={<Home />} />
+          <Route path="/quem-somos" element={<QuemSomos />} />
+          <Route path="/orcamento" element={<Orcamento />} />
+          <Route path="*" element={<Navigate to="/home" replace />} />
         </Routes>
       </BrowserRouter>
     </div>
