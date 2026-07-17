@@ -33,9 +33,9 @@ export default function QuemSomos() {
           {/* Hero banner */}
           <section>
             <img
-              src="https://www.engemix.com.br/wp-content/uploads/2024/06/funcion%C3%A1rio-na-usina.avif"
+              src="/quem-somos-hero.avif"
               alt="Quem somos - Engemix"
-              className="w-full h-60 lg:h-80 object-cover"
+              className="w-full h-60 lg:h-96 object-cover"
               loading="eager"
               decoding="sync"
               data-testid="qs-hero-img"
