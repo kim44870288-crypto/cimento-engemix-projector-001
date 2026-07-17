@@ -1,4 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
+import Header from "@/components/Header";
+import Footer from "@/components/Footer";
 
 const HERO_SLIDES = [
   {
@@ -147,6 +149,9 @@ export default function Home() {
 
   return (
     <div className="bg-white" data-testid="home-page">
+      <Header />
+      {/* Spacer for fixed header */}
+      <div className="h-20" aria-hidden="true" />
       {/* Hero Carousel */}
       <section
         id="home-hero-carrossel"
@@ -481,6 +486,7 @@ export default function Home() {
           </picture>
         </a>
       </main>
+      <Footer />
     </div>
   );
 }
