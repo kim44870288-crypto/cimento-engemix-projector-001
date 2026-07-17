@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 
 export default function FloatingButtons() {
   const [showTop, setShowTop] = useState(false);
@@ -44,8 +45,8 @@ export default function FloatingButtons() {
 
           {/* WhatsApp */}
           <li>
-            <a
-              href="#"
+            <Link
+              to="/whatsapp"
               data-testid="float-whatsapp"
               aria-label="Fale conosco no WhatsApp"
               className="block hover:scale-110 transition-transform duration-300"
@@ -81,7 +82,7 @@ export default function FloatingButtons() {
                   </linearGradient>
                 </defs>
               </svg>
-            </a>
+            </Link>
           </li>
         </menu>
       </aside>

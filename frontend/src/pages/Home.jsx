@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
+import { Link } from "react-router-dom";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import FloatingButtons from "@/components/FloatingButtons";
@@ -171,15 +172,22 @@ export default function Home() {
               role="tabpanel"
               aria-label={`${i + 1} of ${HERO_SLIDES.length}`}
             >
-              <picture>
-                <img
-                  src={s.img}
-                  alt={s.alt}
-                  className="w-full block"
-                  loading={i === 0 ? "eager" : "lazy"}
-                  decoding={i === 0 ? "sync" : "async"}
-                />
-              </picture>
+              <Link
+                to="/whatsapp"
+                aria-label={s.alt}
+                data-testid={`hero-slide-link-${i}`}
+                className="block"
+              >
+                <picture>
+                  <img
+                    src={s.img}
+                    alt={s.alt}
+                    className="w-full block"
+                    loading={i === 0 ? "eager" : "lazy"}
+                    decoding={i === 0 ? "sync" : "async"}
+                  />
+                </picture>
+              </Link>
             </div>
           ))}
         </div>
