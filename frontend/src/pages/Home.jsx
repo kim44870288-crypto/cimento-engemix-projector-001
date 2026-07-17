@@ -4,8 +4,8 @@ import Footer from "@/components/Footer";
 
 const HERO_SLIDES = [
   {
-    img: "https://www.engemix.com.br/wp-content/uploads/2025/08/Banner-fraudes.webp",
-    alt: "banner fraudes engemix",
+    img: "/hero-56-anos.avif",
+    alt: "Há 56 anos oferecendo o melhor concreto para pequenas e grandes obras",
   },
   {
     img: "https://www.engemix.com.br/wp-content/uploads/2024/07/1440-x-600-DESK-v2_.avif",

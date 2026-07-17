@@ -24,7 +24,7 @@ export default function Header() {
 
   return (
     <header
-      className="bg-[#790800] w-full fixed top-0 left-0 z-30 shadow-md"
+      className="bg-[#E30613] w-full fixed top-0 left-0 z-30 shadow-md"
       data-testid="site-header"
     >
       <nav className="container mx-auto px-6 py-4 h-20 flex items-center">
@@ -125,7 +125,7 @@ export default function Header() {
       {/* Mobile drawer */}
       {open && (
         <div
-          className="lg:hidden bg-[#790800] border-t border-white/20"
+          className="lg:hidden bg-[#E30613] border-t border-white/20"
           data-testid="mobile-menu"
         >
           <ul className="flex flex-col py-2">
