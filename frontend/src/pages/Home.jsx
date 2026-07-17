@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import FloatingButtons from "@/components/FloatingButtons";
 
 const HERO_SLIDES = [
   {
@@ -486,6 +487,7 @@ export default function Home() {
           </picture>
         </a>
       </main>
+      <FloatingButtons />
       <Footer />
     </div>
   );
