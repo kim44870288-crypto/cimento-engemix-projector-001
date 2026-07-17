@@ -1,9 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import FloatingButtons from "@/components/FloatingButtons";
 import { MapPin, Mail, Phone } from "lucide-react";
 import { toast, Toaster } from "sonner";
+import { api } from "@/lib/api";
+import { trackPageview, track } from "@/lib/tracker";
 
 const ESTADOS = [
   { v: "BA", l: "Bahia" },
@@ -39,6 +41,10 @@ export default function Orcamento() {
   });
   const [sending, setSending] = useState(false);
 
+  useEffect(() => {
+    trackPageview();
+  }, []);
+
   const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
 
   const submit = async (e) => {
@@ -48,23 +54,36 @@ export default function Orcamento() {
       return;
     }
     setSending(true);
-    // Simulação local — a integração real com backend pode ser feita depois
-    await new Promise((r) => setTimeout(r, 700));
-    toast.success(
-      "Recebemos sua solicitação! Em breve entraremos em contato."
-    );
-    setForm({
-      telefone: "",
-      nome: "",
-      cargo: "",
-      email: "",
-      tipoObra: "",
-      cep: "",
-      cidade: "",
-      estado: "",
-      volume: "",
-    });
-    setSending(false);
+    try {
+      await api.post("/leads", {
+        telefone: form.telefone,
+        nome: form.nome,
+        cargo: form.cargo,
+        email: form.email,
+        tipo_obra: form.tipoObra,
+        cep: form.cep,
+        cidade: form.cidade,
+        estado: form.estado,
+        volume: form.volume,
+      });
+      track("lead_submitted");
+      toast.success("Recebemos sua solicitação! Em breve entraremos em contato.");
+      setForm({
+        telefone: "",
+        nome: "",
+        cargo: "",
+        email: "",
+        tipoObra: "",
+        cep: "",
+        cidade: "",
+        estado: "",
+        volume: "",
+      });
+    } catch (err) {
+      toast.error("Falha ao enviar. Tente novamente em instantes.");
+    } finally {
+      setSending(false);
+    }
   };
 
   return (

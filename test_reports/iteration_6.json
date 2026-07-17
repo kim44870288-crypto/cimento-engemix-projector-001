@@ -1,0 +1,25 @@
+{
+  "summary": "Full backend + frontend test of new admin panel /donascimentopainel. 12/12 pytest tests pass. All UI flows verified: login (bad/good creds), dashboard cards + charts + presence + online sessions, sidebar nav (dashboard/atividade/leads/config), logout, protected routes, orcamento form -> POST /api/leads -> lead visible in admin panel, config save reflects in /api/config/public. Public tracking events populate presence/stats correctly.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "AdminDashboard", "issues": ["Recharts logs width/height(-1) warnings on initial render — cosmetic only; charts render correctly after layout settles"]}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/test_admin_api.py", "/app/test_reports/pytest/pytest_results.xml"],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "server.py uses deprecated @app.on_event('startup'/'shutdown') — will be removed in future FastAPI; consider migrating to lifespan handler.",
+    "PATCH /api/admin/leads/{id} accepts arbitrary Dict[str, Any]; Pydantic model would be safer.",
+    "Presence uses $last inside $group without $sort within group scope — order of last_page/ip/user_agent may be non-deterministic; consider $sort before $group by created_at then use $first."
+  ],
+  "updated_files": ["/app/backend/tests/test_admin_api.py"],
+  "success_rate": {"backend": "100%", "frontend": "100%"},
+  "test_credentials": "donas@gmail.com / Seinao@123 (from /app/memory/test_credentials.md)",
+  "seed_data_creation": "Created TEST_ prefixed leads and pageview events during testing; TEST_UI_* lead persisted in DB.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Admin panel fully working. Backend tests in /app/backend/tests/test_admin_api.py cover auth, tracking, leads, stats, activity, presence, config CRUD (12 tests). Frontend uses data-testid extensively (admin-login-page, admin-login-email/password/submit/error, admin-dashboard, card-*, presence-badge, chart-24h, chart-top-pages, online-sessions, nav-*, btn-logout, admin-activity, btn-toggle-live, admin-leads, admin-settings, cfg-wa-number/message/save, orc-form/nome/telefone/submit)."
+}

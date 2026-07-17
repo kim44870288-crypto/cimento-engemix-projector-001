@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { ChevronDown, Download, Menu, X } from "lucide-react";
+import { trackPageview } from "@/lib/tracker";
 
 const WA_LOGO = (
   <svg
@@ -74,6 +75,7 @@ export default function WhatsAppPage() {
   const [recOpen, setRecOpen] = useState(false);
 
   useEffect(() => {
+    trackPageview();
     document.title = "Compartilhe no WhatsApp";
     return () => {
       document.title =

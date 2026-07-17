@@ -2,6 +2,8 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import FloatingButtons from "@/components/FloatingButtons";
 import { ArrowRight } from "lucide-react";
+import { useEffect } from "react";
+import { trackPageview } from "@/lib/tracker";
 
 const CASES = [
   {
@@ -23,6 +25,9 @@ const CASES = [
 ];
 
 export default function QuemSomos() {
+  useEffect(() => {
+    trackPageview();
+  }, []);
   return (
     <div className="bg-gray-100" data-testid="quem-somos-page">
       <Header />

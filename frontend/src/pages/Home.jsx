@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import FloatingButtons from "@/components/FloatingButtons";
+import { trackPageview, track } from "@/lib/tracker";
 
 const HERO_SLIDES = [
   {
@@ -134,6 +135,10 @@ const BENEFITS = [
 export default function Home() {
   const [slide, setSlide] = useState(0);
 
+  useEffect(() => {
+    trackPageview();
+  }, []);
+
   const goTo = useCallback(
     (index) => {
       const total = HERO_SLIDES.length;
@@ -176,6 +181,7 @@ export default function Home() {
                 to="/whatsapp"
                 aria-label={s.alt}
                 data-testid={`hero-slide-link-${i}`}
+                onClick={() => track("hero_slide_click", { slide: i })}
                 className="block"
               >
                 <picture>

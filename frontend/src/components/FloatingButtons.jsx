@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { track } from "@/lib/tracker";
 
 export default function FloatingButtons() {
   const [showTop, setShowTop] = useState(false);
+  const [waLink, setWaLink] = useState("/whatsapp");
 
   useEffect(() => {
     const onScroll = () => setShowTop(window.scrollY > 400);
@@ -49,6 +51,7 @@ export default function FloatingButtons() {
               to="/whatsapp"
               data-testid="float-whatsapp"
               aria-label="Fale conosco no WhatsApp"
+              onClick={() => track("whatsapp_click", { source: "floating" })}
               className="block hover:scale-110 transition-transform duration-300"
             >
               <svg
