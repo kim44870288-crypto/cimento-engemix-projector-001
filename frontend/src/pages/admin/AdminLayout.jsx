@@ -1,19 +1,37 @@
 import { NavLink, Outlet } from "react-router-dom";
-import { LayoutDashboard, Activity, Users, Settings, LogOut, ExternalLink } from "lucide-react";
+import {
+  LayoutDashboard,
+  Activity,
+  Users,
+  Settings,
+  LogOut,
+  ExternalLink,
+} from "lucide-react";
+import { Toaster } from "sonner";
 import { useAuth } from "@/lib/auth";
-
-const ITEMS = [
-  { to: "/donascimentopainel/dashboard", label: "Dashboard", icon: LayoutDashboard, testid: "nav-dashboard" },
-  { to: "/donascimentopainel/atividade", label: "Atividade", icon: Activity, testid: "nav-atividade" },
-  { to: "/donascimentopainel/leads", label: "Orçamentos", icon: Users, testid: "nav-leads" },
-  { to: "/donascimentopainel/configuracoes", label: "Configurações", icon: Settings, testid: "nav-config" },
-];
+import { useLeadsNotifier } from "@/lib/notifier";
 
 export default function AdminLayout() {
   const { user, logout } = useAuth();
+  const leadsCount = useLeadsNotifier();
+
+  const items = [
+    { to: "/donascimentopainel/dashboard", label: "Dashboard", icon: LayoutDashboard, testid: "nav-dashboard" },
+    { to: "/donascimentopainel/atividade", label: "Atividade", icon: Activity, testid: "nav-atividade" },
+    {
+      to: "/donascimentopainel/leads",
+      label: "Orçamentos",
+      icon: Users,
+      testid: "nav-leads",
+      badge: leadsCount,
+    },
+    { to: "/donascimentopainel/configuracoes", label: "Configurações", icon: Settings, testid: "nav-config" },
+  ];
 
   return (
     <div className="min-h-screen bg-[#0b0416] text-white flex" data-testid="admin-layout">
+      <Toaster position="top-right" richColors theme="dark" />
+
       {/* Sidebar */}
       <aside className="w-64 shrink-0 bg-[#130726] border-r border-purple-900/40 hidden lg:flex flex-col">
         <div className="px-6 py-6 border-b border-purple-900/40">
@@ -31,7 +49,7 @@ export default function AdminLayout() {
         </div>
 
         <nav className="flex-1 py-4">
-          {ITEMS.map((it) => (
+          {items.map((it) => (
             <NavLink
               key={it.to}
               to={it.to}
@@ -45,7 +63,15 @@ export default function AdminLayout() {
               }
             >
               <it.icon size={18} />
-              {it.label}
+              <span className="flex-1">{it.label}</span>
+              {it.badge > 0 && (
+                <span
+                  className="min-w-[22px] h-[22px] px-1.5 rounded-full bg-amber-500 text-black text-[11px] font-bold flex items-center justify-center"
+                  data-testid={`badge-${it.testid}`}
+                >
+                  {it.badge > 99 ? "99+" : it.badge}
+                </span>
+              )}
             </NavLink>
           ))}
         </nav>
@@ -61,7 +87,9 @@ export default function AdminLayout() {
             <ExternalLink size={14} /> Ver site público
           </a>
           <div className="px-3 py-2">
-            <div className="text-[10px] tracking-widest uppercase text-purple-300/50">Logado como</div>
+            <div className="text-[10px] tracking-widest uppercase text-purple-300/50">
+              Logado como
+            </div>
             <div className="text-sm text-white truncate">{user?.email}</div>
           </div>
           <button
@@ -87,17 +115,22 @@ export default function AdminLayout() {
           </button>
         </div>
         <div className="flex overflow-x-auto gap-1 px-2 pb-2">
-          {ITEMS.map((it) => (
+          {items.map((it) => (
             <NavLink
               key={it.to}
               to={it.to}
               className={({ isActive }) =>
-                `whitespace-nowrap text-xs px-3 py-1.5 rounded-lg ${
+                `whitespace-nowrap text-xs px-3 py-1.5 rounded-lg flex items-center gap-1 ${
                   isActive ? "bg-purple-600 text-white" : "text-purple-200/70 bg-purple-900/30"
                 }`
               }
             >
               {it.label}
+              {it.badge > 0 && (
+                <span className="min-w-[16px] h-[16px] px-1 rounded-full bg-amber-500 text-black text-[9px] font-bold flex items-center justify-center">
+                  {it.badge > 99 ? "99+" : it.badge}
+                </span>
+              )}
             </NavLink>
           ))}
         </div>

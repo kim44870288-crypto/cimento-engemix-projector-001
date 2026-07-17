@@ -1,0 +1,25 @@
+{
+  "summary": "Iteration 7 verified all new features + technical fixes. Backend: 16/16 pytest pass (lifespan migration confirmed via /api healthy; PATCH leads uses Literal — 422 on invalid status or unknown fields; presence returns deterministic last_page via $sort→$last; stats returns 24/7/30 series with proper labels + conversion_rate + wa_click_rate as rounded floats; CSV export has correct headers + PT-BR columns; DELETE lead works, returns 404 on second call; leads list returns {items, count}). Frontend: login OK; dashboard shows card-conversion + card-wa-rate with %; period-toggle switches chart-trend to '7 dias' with 7 bars; funnel-conversion shows 4 stages; sidebar badge-nav-leads shows count (3→4) and incremented within ~11s after POST /api/leads; btn-export-csv triggers file download (orcamentos_engemix_*.csv); lead-wa-{id} href = wa.me/{digits} target=_blank; lead-del-{id} shows inline confirm, lead-del-confirm-{id} removes card. Regression items (login, nav, presence, config, tracking) unaffected.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "AdminDashboard", "issues": ["Recharts width(-1)/height(-1) warnings on initial mount — cosmetic, charts render correctly after layout settles (pre-existing from iter 6)"]}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/test_admin_api.py", "/app/test_reports/pytest/pytest_results.xml"],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "All 3 fixes from iter 6 correctly applied: lifespan handler (server.py:119), LeadStatusUpdate Pydantic + Literal (server.py:109), $sort before $group in /admin/presence (server.py:355-370).",
+    "Minor dev-only console noise: Emergent visual-editor injects <span x-excluded='true'> inside <option> elements of the leads-status-filter, causing a React hydration warning ('span cannot be a child of option'). This is a dev-tooling artifact, not an app bug — options render correctly.",
+    "notifier polling every 8s + dashboard polling every 5s means an active admin session issues ~30 requests/min just for polling; consider SSE/WebSocket for production scale (nice-to-have, not blocking)."
+  ],
+  "updated_files": ["/app/backend/tests/test_admin_api.py"],
+  "success_rate": {"backend": "100% (16/16)", "frontend": "100%"},
+  "test_credentials": "donas@gmail.com / Seinao@123 (from /app/memory/test_credentials.md)",
+  "seed_data_creation": "Created and deleted TEST_ prefixed leads (LeadUser, x, del, exp) and TESTUI_* lead through UI. All cleaned up.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "All admin panel features stable. Testids: card-conversion, card-wa-rate, period-toggle, period-{24h|7d|30d}, chart-trend, funnel-conversion, badge-nav-leads, btn-export-csv, lead-wa-{id}, lead-del-{id}, lead-del-confirm-{id}. useLeadsNotifier polls every 8s. Backend tests use REACT_APP_BACKEND_URL env var (required, no default)."
+}

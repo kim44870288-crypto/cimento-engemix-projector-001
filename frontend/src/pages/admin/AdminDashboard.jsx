@@ -7,6 +7,8 @@ import {
   UserCheck,
   FileText,
   TrendingUp,
+  Target,
+  Zap,
 } from "lucide-react";
 import {
   LineChart,
@@ -18,20 +20,59 @@ import {
   BarChart,
   Bar,
   CartesianGrid,
+  Area,
+  AreaChart,
 } from "recharts";
 
+const PERIODS = [
+  { v: "24h", label: "24 horas" },
+  { v: "7d", label: "7 dias" },
+  { v: "30d", label: "30 dias" },
+];
+
 const CARDS = [
-  { key: "visitors_24h", label: "Visitantes únicos (24h)", icon: Users, color: "from-purple-500 to-fuchsia-500" },
-  { key: "pageviews_24h", label: "Pageviews (24h)", icon: Eye, color: "from-blue-500 to-cyan-500" },
-  { key: "whatsapp_clicks_24h", label: "Cliques no WhatsApp (24h)", icon: MessageCircle, color: "from-emerald-500 to-teal-500" },
-  { key: "leads_24h", label: "Novos orçamentos (24h)", icon: FileText, color: "from-amber-500 to-orange-500" },
-  { key: "events_24h", label: "Eventos totais (24h)", icon: TrendingUp, color: "from-pink-500 to-rose-500" },
-  { key: "leads", label: "Orçamentos (total)", icon: UserCheck, color: "from-indigo-500 to-violet-500" },
+  {
+    key: "visitors_period",
+    label: "Visitantes únicos",
+    icon: Users,
+    color: "from-purple-500 to-fuchsia-500",
+  },
+  {
+    key: "pageviews_period",
+    label: "Pageviews",
+    icon: Eye,
+    color: "from-blue-500 to-cyan-500",
+  },
+  {
+    key: "whatsapp_clicks_period",
+    label: "Cliques no WhatsApp",
+    icon: MessageCircle,
+    color: "from-emerald-500 to-teal-500",
+  },
+  {
+    key: "leads_period",
+    label: "Orçamentos recebidos",
+    icon: FileText,
+    color: "from-amber-500 to-orange-500",
+  },
+  {
+    key: "events_period",
+    label: "Eventos totais",
+    icon: TrendingUp,
+    color: "from-pink-500 to-rose-500",
+  },
+  {
+    key: "leads",
+    label: "Orçamentos (todos os tempos)",
+    icon: UserCheck,
+    color: "from-indigo-500 to-violet-500",
+  },
 ];
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState(null);
   const [presence, setPresence] = useState({ online: 0, sessions: [] });
+  const [period, setPeriod] = useState("24h");
 
   useEffect(() => {
     document.title = "Dashboard · Painel";
@@ -39,7 +80,7 @@ export default function AdminDashboard() {
     const load = async () => {
       try {
         const [s, p] = await Promise.all([
-          api.get("/admin/stats"),
+          api.get("/admin/stats", { params: { period } }),
           api.get("/admin/presence"),
         ]);
         if (alive) {
@@ -54,10 +95,21 @@ export default function AdminDashboard() {
       alive = false;
       clearInterval(t);
     };
-  }, []);
+  }, [period]);
 
   if (!stats)
-    return <div className="text-purple-200/70" data-testid="dash-loading">Carregando métricas...</div>;
+    return (
+      <div className="text-purple-200/70" data-testid="dash-loading">
+        Carregando métricas...
+      </div>
+    );
+
+  const funnel = [
+    { name: "Visitantes", value: stats.totals.visitors_period, color: "#a855f7" },
+    { name: "Pageviews", value: stats.totals.pageviews_period, color: "#3b82f6" },
+    { name: "Cliques WhatsApp", value: stats.totals.whatsapp_clicks_period, color: "#10b981" },
+    { name: "Orçamentos", value: stats.totals.leads_period, color: "#f59e0b" },
+  ];
 
   return (
     <div className="space-y-8" data-testid="admin-dashboard">
@@ -69,17 +121,87 @@ export default function AdminDashboard() {
             Atualizado em tempo real · atualiza a cada 5s
           </p>
         </div>
+        <div className="flex items-center gap-3 flex-wrap">
+          <div
+            className="inline-flex items-center gap-3 bg-emerald-600/15 border border-emerald-500/30 px-5 py-2.5 rounded-full"
+            data-testid="presence-badge"
+          >
+            <span className="relative flex h-3 w-3">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-400" />
+            </span>
+            <span className="text-emerald-200 text-sm font-semibold">
+              {presence.online} {presence.online === 1 ? "usuário" : "usuários"} online
+            </span>
+          </div>
+
+          <div className="inline-flex bg-[#160828] border border-purple-500/30 rounded-full p-1" data-testid="period-toggle">
+            {PERIODS.map((p) => (
+              <button
+                key={p.v}
+                onClick={() => setPeriod(p.v)}
+                data-testid={`period-${p.v}`}
+                className={`px-4 py-1.5 text-xs font-semibold rounded-full transition ${
+                  period === p.v
+                    ? "bg-purple-600 text-white"
+                    : "text-purple-200/70 hover:text-white"
+                }`}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Conversion */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div
-          className="inline-flex items-center gap-3 bg-emerald-600/15 border border-emerald-500/30 px-5 py-2.5 rounded-full"
-          data-testid="presence-badge"
+          className="relative overflow-hidden bg-gradient-to-br from-purple-900/60 to-fuchsia-900/40 border border-purple-500/30 rounded-2xl p-6"
+          data-testid="card-conversion"
         >
-          <span className="relative flex h-3 w-3">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-            <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-400" />
-          </span>
-          <span className="text-emerald-200 text-sm font-semibold">
-            {presence.online} {presence.online === 1 ? "usuário" : "usuários"} online agora
-          </span>
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="flex items-center gap-2 text-purple-200/80 text-xs uppercase tracking-widest">
+                <Target size={14} />
+                Taxa de conversão · orçamentos
+              </div>
+              <div className="text-4xl font-bold mt-2">
+                {stats.totals.conversion_rate}%
+              </div>
+              <div className="text-xs text-purple-200/60 mt-1">
+                {stats.totals.leads_period} orçamentos / {stats.totals.visitors_period}{" "}
+                visitantes
+              </div>
+            </div>
+            <div className="w-14 h-14 rounded-2xl bg-purple-500/30 flex items-center justify-center">
+              <Target size={28} className="text-purple-200" />
+            </div>
+          </div>
+        </div>
+
+        <div
+          className="relative overflow-hidden bg-gradient-to-br from-emerald-900/60 to-teal-900/40 border border-emerald-500/30 rounded-2xl p-6"
+          data-testid="card-wa-rate"
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="flex items-center gap-2 text-emerald-200/80 text-xs uppercase tracking-widest">
+                <Zap size={14} />
+                Engajamento WhatsApp
+              </div>
+              <div className="text-4xl font-bold mt-2">
+                {stats.totals.wa_click_rate}%
+              </div>
+              <div className="text-xs text-emerald-200/60 mt-1">
+                {stats.totals.whatsapp_clicks_period} cliques /{" "}
+                {stats.totals.visitors_period} visitantes
+              </div>
+            </div>
+            <div className="w-14 h-14 rounded-2xl bg-emerald-500/30 flex items-center justify-center">
+              <MessageCircle size={28} className="text-emerald-200" />
+            </div>
+          </div>
         </div>
       </div>
 
@@ -87,10 +209,7 @@ export default function AdminDashboard() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {CARDS.map((c) => {
           const Icon = c.icon;
-          const value =
-            (c.key.includes("_24h") || c.key === "leads"
-              ? stats.totals[c.key]
-              : stats.totals[c.key]) ?? 0;
+          const value = stats.totals[c.key] ?? 0;
           return (
             <div
               key={c.key}
@@ -118,20 +237,26 @@ export default function AdminDashboard() {
         })}
       </div>
 
-      {/* Chart */}
+      {/* Chart 1: pageviews trend */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div
           className="lg:col-span-2 bg-[#160828] border border-purple-500/20 rounded-2xl p-5"
-          data-testid="chart-24h"
+          data-testid="chart-trend"
         >
           <h3 className="text-sm font-semibold text-purple-200/80 uppercase tracking-widest mb-4">
-            Pageviews nas últimas 24h
+            Pageviews · {PERIODS.find((p) => p.v === period)?.label}
           </h3>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={stats.series_24h}>
+              <AreaChart data={stats.series}>
+                <defs>
+                  <linearGradient id="gViews" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#c084fc" stopOpacity={0.7} />
+                    <stop offset="100%" stopColor="#c084fc" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
                 <CartesianGrid stroke="#3b1a5c" strokeDasharray="3 3" />
-                <XAxis dataKey="hour" stroke="#9d7cd0" fontSize={11} />
+                <XAxis dataKey="label" stroke="#9d7cd0" fontSize={11} />
                 <YAxis stroke="#9d7cd0" fontSize={11} allowDecimals={false} />
                 <Tooltip
                   contentStyle={{
@@ -141,19 +266,22 @@ export default function AdminDashboard() {
                     color: "#fff",
                   }}
                 />
-                <Line
+                <Area
                   type="monotone"
                   dataKey="views"
                   stroke="#c084fc"
                   strokeWidth={2.5}
-                  dot={{ fill: "#a855f7", r: 3 }}
+                  fill="url(#gViews)"
                 />
-              </LineChart>
+              </AreaChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        <div className="bg-[#160828] border border-purple-500/20 rounded-2xl p-5" data-testid="chart-top-pages">
+        <div
+          className="bg-[#160828] border border-purple-500/20 rounded-2xl p-5"
+          data-testid="chart-top-pages"
+        >
           <h3 className="text-sm font-semibold text-purple-200/80 uppercase tracking-widest mb-4">
             Páginas mais vistas (7d)
           </h3>
@@ -174,6 +302,51 @@ export default function AdminDashboard() {
               </BarChart>
             </ResponsiveContainer>
           </div>
+        </div>
+      </div>
+
+      {/* Funnel */}
+      <div
+        className="bg-[#160828] border border-purple-500/20 rounded-2xl p-6"
+        data-testid="funnel-conversion"
+      >
+        <h3 className="text-sm font-semibold text-purple-200/80 uppercase tracking-widest mb-6">
+          Funil de conversão · {PERIODS.find((p) => p.v === period)?.label}
+        </h3>
+        <div className="space-y-3">
+          {funnel.map((f, i) => {
+            const max = Math.max(...funnel.map((x) => x.value), 1);
+            const pct = (f.value / max) * 100;
+            const prev = i > 0 ? funnel[i - 1].value : null;
+            const dropoff =
+              prev && prev > 0
+                ? Math.round(((prev - f.value) / prev) * 100)
+                : null;
+            return (
+              <div key={f.name}>
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-sm text-white font-medium">{f.name}</span>
+                  <div className="flex items-center gap-3">
+                    {dropoff !== null && dropoff > 0 && (
+                      <span className="text-[10px] text-red-300/80">
+                        ↓ {dropoff}%
+                      </span>
+                    )}
+                    <span className="text-sm text-purple-200 font-bold">{f.value}</span>
+                  </div>
+                </div>
+                <div className="h-4 bg-purple-950/60 rounded-full overflow-hidden">
+                  <div
+                    className="h-full rounded-full transition-all duration-700"
+                    style={{
+                      width: `${pct}%`,
+                      background: `linear-gradient(90deg, ${f.color}, ${f.color}bb)`,
+                    }}
+                  />
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
 

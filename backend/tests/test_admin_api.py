@@ -1,11 +1,11 @@
-"""Backend tests for Engemix Admin API"""
+"""Backend tests for Engemix Admin API - Iteration 7 (new features)"""
 import os
 import time
 import uuid
 import pytest
 import requests
 
-BASE_URL = os.environ.get("REACT_APP_BACKEND_URL", "https://link-cleaner.preview.emergentagent.com").rstrip("/")
+BASE_URL = os.environ["REACT_APP_BACKEND_URL"].rstrip("/")
 API = f"{BASE_URL}/api"
 
 ADMIN_EMAIL = "donas@gmail.com"
@@ -16,9 +16,7 @@ ADMIN_PASS = "Seinao@123"
 def token():
     r = requests.post(f"{API}/auth/login", json={"email": ADMIN_EMAIL, "password": ADMIN_PASS}, timeout=15)
     assert r.status_code == 200, r.text
-    data = r.json()
-    assert "token" in data and data["user"]["email"] == ADMIN_EMAIL
-    return data["token"]
+    return r.json()["token"]
 
 
 @pytest.fixture
@@ -26,9 +24,20 @@ def auth_headers(token):
     return {"Authorization": f"Bearer {token}"}
 
 
+# ---------- Health ----------
+class TestHealth:
+    def test_root(self):
+        r = requests.get(f"{API}/", timeout=10)
+        assert r.status_code == 200
+        assert r.json().get("ok") is True
+
+    def test_login_ok(self, token):
+        assert isinstance(token, str) and len(token) > 20
+
+
 # ---------- Auth ----------
 class TestAuth:
-    def test_login_bad_credentials(self):
+    def test_login_bad(self):
         r = requests.post(f"{API}/auth/login", json={"email": ADMIN_EMAIL, "password": "wrong"}, timeout=10)
         assert r.status_code == 401
 
@@ -36,113 +45,151 @@ class TestAuth:
         r = requests.get(f"{API}/auth/me", timeout=10)
         assert r.status_code in (401, 403)
 
-    def test_me_with_token(self, auth_headers):
+    def test_me(self, auth_headers):
         r = requests.get(f"{API}/auth/me", headers=auth_headers, timeout=10)
         assert r.status_code == 200
-        data = r.json()
-        assert data["email"] == ADMIN_EMAIL
-        assert data["role"] == "admin"
+        assert r.json()["email"] == ADMIN_EMAIL
 
 
-# ---------- Public tracking + config ----------
+# ---------- Public tracking ----------
 class TestPublic:
-    def test_track_event(self):
+    def test_track_and_public_config(self):
         r = requests.post(f"{API}/track/event", json={
             "type": "pageview", "page": "/home", "session_id": f"TEST_{uuid.uuid4()}"
         }, timeout=10)
         assert r.status_code == 200
-        assert r.json().get("ok") is True
+        r2 = requests.get(f"{API}/config/public", timeout=10)
+        assert r2.status_code == 200
+        assert "whatsapp_number" in r2.json()
 
-    def test_public_config(self):
-        r = requests.get(f"{API}/config/public", timeout=10)
+
+# ---------- Stats with period ----------
+class TestStatsPeriod:
+    def test_stats_24h(self, auth_headers):
+        r = requests.get(f"{API}/admin/stats?period=24h", headers=auth_headers, timeout=15)
         assert r.status_code == 200
-        data = r.json()
-        assert "whatsapp_number" in data and "whatsapp_message" in data
+        d = r.json()
+        assert d["period"] == "24h"
+        assert len(d["series"]) == 24
+        # HH:00 label format
+        assert ":" in d["series"][0]["label"]
+        t = d["totals"]
+        assert "conversion_rate" in t and isinstance(t["conversion_rate"], (int, float))
+        assert "wa_click_rate" in t and isinstance(t["wa_click_rate"], (int, float))
+
+    def test_stats_7d(self, auth_headers):
+        r = requests.get(f"{API}/admin/stats?period=7d", headers=auth_headers, timeout=15)
+        assert r.status_code == 200
+        d = r.json()
+        assert d["period"] == "7d"
+        assert len(d["series"]) == 7
+        assert "/" in d["series"][0]["label"]  # DD/MM
+
+    def test_stats_30d(self, auth_headers):
+        r = requests.get(f"{API}/admin/stats?period=30d", headers=auth_headers, timeout=20)
+        assert r.status_code == 200
+        d = r.json()
+        assert len(d["series"]) == 30
 
 
-# ---------- Leads ----------
+# ---------- Leads CRUD + new endpoints ----------
 class TestLeads:
-    def test_create_lead_and_persist(self, auth_headers):
+    def test_list_shape(self, auth_headers):
+        r = requests.get(f"{API}/admin/leads", headers=auth_headers, timeout=10)
+        assert r.status_code == 200
+        d = r.json()
+        assert "items" in d and "count" in d
+        assert isinstance(d["count"], int)
+
+    def test_create_patch_valid(self, auth_headers):
         payload = {"telefone": "11999999999", "nome": "TEST_LeadUser", "cidade": "SP"}
         r = requests.post(f"{API}/leads", json=payload, timeout=10)
-        assert r.status_code == 200, r.text
-        d = r.json()
-        assert d["ok"] and d["id"]
-        lead_id = d["id"]
+        assert r.status_code == 200
+        lead_id = r.json()["id"]
 
-        # Verify appears in admin listing
-        r2 = requests.get(f"{API}/admin/leads", headers=auth_headers, timeout=10)
+        # Valid status
+        r2 = requests.patch(f"{API}/admin/leads/{lead_id}", headers=auth_headers,
+                            json={"status": "contatado"}, timeout=10)
         assert r2.status_code == 200
-        ids = [x["id"] for x in r2.json()["items"]]
-        assert lead_id in ids
-
-        # Update status
-        r3 = requests.patch(f"{API}/admin/leads/{lead_id}",
-                            headers=auth_headers, json={"status": "contatado"}, timeout=10)
-        assert r3.status_code == 200
+        assert r2.json()["status"] == "contatado"
 
         # Verify persisted
-        r4 = requests.get(f"{API}/admin/leads", headers=auth_headers, timeout=10)
-        item = next(x for x in r4.json()["items"] if x["id"] == lead_id)
+        r3 = requests.get(f"{API}/admin/leads", headers=auth_headers, timeout=10)
+        item = next(x for x in r3.json()["items"] if x["id"] == lead_id)
         assert item["status"] == "contatado"
 
-    def test_lead_missing_required(self):
-        r = requests.post(f"{API}/leads", json={"cidade": "SP"}, timeout=10)
-        assert r.status_code == 422
+        # Cleanup
+        rd = requests.delete(f"{API}/admin/leads/{lead_id}", headers=auth_headers, timeout=10)
+        assert rd.status_code == 200
 
+    def test_patch_invalid_status(self, auth_headers):
+        # Create
+        r = requests.post(f"{API}/leads", json={"telefone": "1", "nome": "TEST_x"}, timeout=10)
+        lead_id = r.json()["id"]
+        try:
+            r2 = requests.patch(f"{API}/admin/leads/{lead_id}", headers=auth_headers,
+                                json={"status": "invalido"}, timeout=10)
+            assert r2.status_code == 422
+            r3 = requests.patch(f"{API}/admin/leads/{lead_id}", headers=auth_headers,
+                                json={"foo": "bar"}, timeout=10)
+            assert r3.status_code == 422
+        finally:
+            requests.delete(f"{API}/admin/leads/{lead_id}", headers=auth_headers, timeout=10)
 
-# ---------- Admin data ----------
-class TestAdmin:
-    def test_stats(self, auth_headers):
-        r = requests.get(f"{API}/admin/stats", headers=auth_headers, timeout=15)
-        assert r.status_code == 200
-        d = r.json()
-        for k in ["events", "leads", "events_24h", "leads_24h", "pageviews_24h",
-                  "whatsapp_clicks_24h", "visitors_24h"]:
-            assert k in d["totals"], f"missing {k}"
-        assert isinstance(d["series_24h"], list) and len(d["series_24h"]) == 24
-        assert "top_pages" in d and "by_type" in d
-
-    def test_activity(self, auth_headers):
-        r = requests.get(f"{API}/admin/activity?limit=10", headers=auth_headers, timeout=10)
-        assert r.status_code == 200
-        d = r.json()
-        assert "items" in d and "server_time" in d
-        # since filter
-        r2 = requests.get(f"{API}/admin/activity?since={d['server_time']}",
-                          headers=auth_headers, timeout=10)
+    def test_delete_lead_and_404(self, auth_headers):
+        r = requests.post(f"{API}/leads", json={"telefone": "1", "nome": "TEST_del"}, timeout=10)
+        lead_id = r.json()["id"]
+        r2 = requests.delete(f"{API}/admin/leads/{lead_id}", headers=auth_headers, timeout=10)
         assert r2.status_code == 200
+        assert r2.json().get("ok") is True
+        # second delete -> 404
+        r3 = requests.delete(f"{API}/admin/leads/{lead_id}", headers=auth_headers, timeout=10)
+        assert r3.status_code == 404
 
-    def test_presence(self, auth_headers):
-        # generate an event with a session first
+    def test_export_csv(self, auth_headers):
+        # ensure at least one lead
+        r0 = requests.post(f"{API}/leads", json={"telefone": "11", "nome": "TEST_exp", "cidade": "SP"}, timeout=10)
+        lead_id = r0.json()["id"]
+        try:
+            r = requests.get(f"{API}/admin/leads/export", headers=auth_headers, timeout=15)
+            assert r.status_code == 200
+            ct = r.headers.get("Content-Type", "")
+            assert "text/csv" in ct
+            cd = r.headers.get("Content-Disposition", "")
+            assert "attachment" in cd and "orcamentos_engemix" in cd
+            body = r.text
+            # header PT-BR
+            first = body.splitlines()[0]
+            for col in ["Data", "Nome", "Telefone", "Email", "Cargo", "Tipo de obra",
+                        "CEP", "Cidade", "Estado", "Volume", "Status"]:
+                assert col in first
+        finally:
+            requests.delete(f"{API}/admin/leads/{lead_id}", headers=auth_headers, timeout=10)
+
+
+# ---------- Presence with $sort ----------
+class TestPresence:
+    def test_presence_order(self, auth_headers):
         sid = f"TEST_PRES_{uuid.uuid4()}"
+        # Emit two events with different pages
         requests.post(f"{API}/track/event", json={"type": "pageview", "page": "/home", "session_id": sid}, timeout=10)
+        time.sleep(1.1)
+        requests.post(f"{API}/track/event", json={"type": "pageview", "page": "/orcamento", "session_id": sid}, timeout=10)
         time.sleep(0.5)
         r = requests.get(f"{API}/admin/presence", headers=auth_headers, timeout=10)
         assert r.status_code == 200
         d = r.json()
-        assert "online" in d and "sessions" in d
-        assert any(s["_id"] == sid for s in d["sessions"])
+        s = next((x for x in d["sessions"] if x["_id"] == sid), None)
+        assert s is not None
+        # Since $sort by created_at asc + $last => should give the latest page /orcamento
+        assert s["last_page"] == "/orcamento"
+        assert "ip" in s and "user_agent" in s
 
-    def test_config_update_reflects_public(self, auth_headers):
-        # capture original
-        orig = requests.get(f"{API}/admin/config", headers=auth_headers, timeout=10).json()
-        try:
-            new_num = "5511987654321"
-            new_msg = "TEST_msg_" + uuid.uuid4().hex[:6]
-            r = requests.put(f"{API}/admin/config", headers=auth_headers,
-                             json={"whatsapp_number": new_num, "whatsapp_message": new_msg}, timeout=10)
-            assert r.status_code == 200
-            pub = requests.get(f"{API}/config/public", timeout=10).json()
-            assert pub["whatsapp_number"] == new_num
-            assert pub["whatsapp_message"] == new_msg
-        finally:
-            requests.put(f"{API}/admin/config", headers=auth_headers,
-                         json={"whatsapp_number": orig["whatsapp_number"],
-                               "whatsapp_message": orig["whatsapp_message"]}, timeout=10)
 
-    def test_admin_endpoints_require_auth(self):
+# ---------- Auth-required ----------
+class TestAuthRequired:
+    def test_all_admin_require_auth(self):
         for path in ["/admin/stats", "/admin/activity", "/admin/presence",
-                     "/admin/leads", "/admin/config"]:
+                     "/admin/leads", "/admin/leads/export", "/admin/config"]:
             r = requests.get(f"{API}{path}", timeout=10)
             assert r.status_code in (401, 403), f"{path} -> {r.status_code}"

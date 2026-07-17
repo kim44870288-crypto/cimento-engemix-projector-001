@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, HTTPException, Depends, Request
+from fastapi import FastAPI, APIRouter, HTTPException, Depends, Request, Response
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
@@ -6,11 +6,14 @@ from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
 import uuid
+import csv
+import io
 import bcrypt
 import jwt
+from contextlib import asynccontextmanager
 from pathlib import Path
 from pydantic import BaseModel, Field, ConfigDict, EmailStr
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Literal
 from datetime import datetime, timezone, timedelta
 
 ROOT_DIR = Path(__file__).parent
@@ -26,8 +29,6 @@ JWT_SECRET = os.environ["JWT_SECRET"]
 JWT_ALGO = "HS256"
 JWT_EXPIRE_HOURS = 24
 
-app = FastAPI(title="Engemix Admin API")
-api = APIRouter(prefix="/api")
 security = HTTPBearer(auto_error=False)
 
 
@@ -75,6 +76,10 @@ async def get_current_admin(
     return {"email": user["email"], "role": user.get("role", "admin")}
 
 
+def hours_for_period(p: str) -> int:
+    return {"24h": 24, "7d": 24 * 7, "30d": 24 * 30}.get(p, 24)
+
+
 # ---------- Models ----------
 class LoginBody(BaseModel):
     email: EmailStr
@@ -101,9 +106,62 @@ class LeadCreate(BaseModel):
     volume: Optional[str] = ""
 
 
+class LeadStatusUpdate(BaseModel):
+    status: Literal["novo", "contatado", "convertido", "descartado"]
+
+
 class ConfigUpdate(BaseModel):
     whatsapp_number: Optional[str] = None
     whatsapp_message: Optional[str] = None
+
+
+# ---------- Lifespan ----------
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    # Indexes
+    await db.admin_users.create_index("email", unique=True)
+    await db.events.create_index("created_at")
+    await db.events.create_index("type")
+    await db.events.create_index("session_id")
+    await db.leads.create_index("created_at")
+
+    # Seed admin
+    admin_email = os.environ.get("ADMIN_EMAIL", "").lower().strip()
+    admin_pass = os.environ.get("ADMIN_PASSWORD", "")
+    if admin_email and admin_pass:
+        existing = await db.admin_users.find_one({"email": admin_email})
+        if not existing:
+            await db.admin_users.insert_one(
+                {
+                    "email": admin_email,
+                    "password_hash": hash_password(admin_pass),
+                    "role": "admin",
+                    "created_at": now_utc().isoformat(),
+                }
+            )
+        elif not verify_password(admin_pass, existing["password_hash"]):
+            await db.admin_users.update_one(
+                {"email": admin_email},
+                {"$set": {"password_hash": hash_password(admin_pass)}},
+            )
+
+    # Seed default config
+    cfg = await db.config.find_one({"_id": "site"})
+    if not cfg:
+        await db.config.insert_one(
+            {
+                "_id": "site",
+                "whatsapp_number": "554121122023",
+                "whatsapp_message": "Olá! Gostaria de solicitar um orçamento de concreto.",
+                "updated_at": now_utc().isoformat(),
+            }
+        )
+    yield
+    client.close()
+
+
+app = FastAPI(title="Engemix Admin API", lifespan=lifespan)
+api = APIRouter(prefix="/api")
 
 
 # ---------- Root ----------
@@ -150,14 +208,13 @@ async def create_lead(body: LeadCreate, request: Request):
     doc["ip"] = request.client.host if request.client else ""
     doc["created_at"] = now_utc().isoformat()
     await db.leads.insert_one(doc)
-    # Also track as event
     await db.events.insert_one(
         {
             "_id": str(uuid.uuid4()),
             "type": "lead_created",
             "page": "/orcamento",
             "session_id": "",
-            "meta": {"nome": body.nome, "cidade": body.cidade},
+            "meta": {"nome": body.nome, "cidade": body.cidade, "lead_id": doc["_id"]},
             "ip": doc["ip"],
             "user_agent": request.headers.get("user-agent", "")[:250],
             "created_at": doc["created_at"],
@@ -184,45 +241,57 @@ async def me(current=Depends(get_current_admin)):
 
 # ---------- Admin: Stats ----------
 @api.get("/admin/stats")
-async def stats(current=Depends(get_current_admin)):
+async def stats(period: str = "24h", current=Depends(get_current_admin)):
+    hours = hours_for_period(period)
     now = now_utc()
-    day_ago = (now - timedelta(hours=24)).isoformat()
+    cutoff = (now - timedelta(hours=hours)).isoformat()
     week_ago = (now - timedelta(days=7)).isoformat()
 
     total_events = await db.events.count_documents({})
     total_leads = await db.leads.count_documents({})
-    events_24h = await db.events.count_documents({"created_at": {"$gte": day_ago}})
-    leads_24h = await db.leads.count_documents({"created_at": {"$gte": day_ago}})
-    pageviews_24h = await db.events.count_documents(
-        {"type": "pageview", "created_at": {"$gte": day_ago}}
+    events_p = await db.events.count_documents({"created_at": {"$gte": cutoff}})
+    leads_p = await db.leads.count_documents({"created_at": {"$gte": cutoff}})
+    pageviews_p = await db.events.count_documents(
+        {"type": "pageview", "created_at": {"$gte": cutoff}}
     )
-    wa_clicks_24h = await db.events.count_documents(
-        {"type": "whatsapp_click", "created_at": {"$gte": day_ago}}
+    wa_clicks_p = await db.events.count_documents(
+        {"type": "whatsapp_click", "created_at": {"$gte": cutoff}}
     )
 
-    # Distinct visitors 24h by session_id
     session_pipeline = [
-        {"$match": {"created_at": {"$gte": day_ago}, "session_id": {"$ne": ""}}},
+        {"$match": {"created_at": {"$gte": cutoff}, "session_id": {"$ne": ""}}},
         {"$group": {"_id": "$session_id"}},
         {"$count": "n"},
     ]
     sess = await db.events.aggregate(session_pipeline).to_list(1)
-    visitors_24h = sess[0]["n"] if sess else 0
+    visitors_p = sess[0]["n"] if sess else 0
 
-    # Series per hour (last 24h)
+    # Series: por hora se 24h, por dia se 7d/30d
     series = []
-    for i in range(23, -1, -1):
-        start = now - timedelta(hours=i + 1)
-        end = now - timedelta(hours=i)
-        count = await db.events.count_documents(
-            {
-                "type": "pageview",
-                "created_at": {"$gte": start.isoformat(), "$lt": end.isoformat()},
-            }
-        )
-        series.append({"hour": end.strftime("%H:00"), "views": count})
+    if hours <= 24:
+        for i in range(23, -1, -1):
+            start = now - timedelta(hours=i + 1)
+            end = now - timedelta(hours=i)
+            count = await db.events.count_documents(
+                {
+                    "type": "pageview",
+                    "created_at": {"$gte": start.isoformat(), "$lt": end.isoformat()},
+                }
+            )
+            series.append({"label": end.strftime("%H:00"), "views": count})
+    else:
+        days = hours // 24
+        for i in range(days - 1, -1, -1):
+            start = now - timedelta(days=i + 1)
+            end = now - timedelta(days=i)
+            count = await db.events.count_documents(
+                {
+                    "type": "pageview",
+                    "created_at": {"$gte": start.isoformat(), "$lt": end.isoformat()},
+                }
+            )
+            series.append({"label": end.strftime("%d/%m"), "views": count})
 
-    # Top pages
     top_pipeline = [
         {"$match": {"type": "pageview", "created_at": {"$gte": week_ago}}},
         {"$group": {"_id": "$page", "count": {"$sum": 1}}},
@@ -231,7 +300,6 @@ async def stats(current=Depends(get_current_admin)):
     ]
     top = await db.events.aggregate(top_pipeline).to_list(6)
 
-    # Events by type (7d)
     type_pipeline = [
         {"$match": {"created_at": {"$gte": week_ago}}},
         {"$group": {"_id": "$type", "count": {"$sum": 1}}},
@@ -239,17 +307,24 @@ async def stats(current=Depends(get_current_admin)):
     ]
     by_type = await db.events.aggregate(type_pipeline).to_list(20)
 
+    # Conversion funnel
+    conversion_rate = round((leads_p / visitors_p * 100), 2) if visitors_p else 0.0
+    wa_rate = round((wa_clicks_p / visitors_p * 100), 2) if visitors_p else 0.0
+
     return {
+        "period": period,
         "totals": {
             "events": total_events,
             "leads": total_leads,
-            "events_24h": events_24h,
-            "leads_24h": leads_24h,
-            "pageviews_24h": pageviews_24h,
-            "whatsapp_clicks_24h": wa_clicks_24h,
-            "visitors_24h": visitors_24h,
+            "events_period": events_p,
+            "leads_period": leads_p,
+            "pageviews_period": pageviews_p,
+            "whatsapp_clicks_period": wa_clicks_p,
+            "visitors_period": visitors_p,
+            "conversion_rate": conversion_rate,
+            "wa_click_rate": wa_rate,
         },
-        "series_24h": series,
+        "series": series,
         "top_pages": [{"page": t["_id"] or "-", "count": t["count"]} for t in top],
         "by_type": [{"type": t["_id"], "count": t["count"]} for t in by_type],
     }
@@ -257,7 +332,11 @@ async def stats(current=Depends(get_current_admin)):
 
 # ---------- Admin: Activity ----------
 @api.get("/admin/activity")
-async def activity(limit: int = 50, since: Optional[str] = None, current=Depends(get_current_admin)):
+async def activity(
+    limit: int = 50,
+    since: Optional[str] = None,
+    current=Depends(get_current_admin),
+):
     q: Dict[str, Any] = {}
     if since:
         q["created_at"] = {"$gt": since}
@@ -270,16 +349,16 @@ async def activity(limit: int = 50, since: Optional[str] = None, current=Depends
     return {"items": docs, "server_time": now_utc().isoformat()}
 
 
-# Presence: sessions active in last 3 minutes
 @api.get("/admin/presence")
 async def presence(current=Depends(get_current_admin)):
     cutoff = (now_utc() - timedelta(minutes=3)).isoformat()
     pipeline = [
         {"$match": {"created_at": {"$gte": cutoff}, "session_id": {"$ne": ""}}},
+        {"$sort": {"created_at": 1}},
         {
             "$group": {
                 "_id": "$session_id",
-                "last_seen": {"$max": "$created_at"},
+                "last_seen": {"$last": "$created_at"},
                 "last_page": {"$last": "$page"},
                 "ip": {"$last": "$ip"},
                 "user_agent": {"$last": "$user_agent"},
@@ -297,25 +376,60 @@ async def presence(current=Depends(get_current_admin)):
 @api.get("/admin/leads")
 async def list_leads(limit: int = 100, current=Depends(get_current_admin)):
     docs = (
-        await db.leads.find({}, {"_id": 1, "telefone": 1, "nome": 1, "cargo": 1, "email": 1,
-                                 "tipo_obra": 1, "cep": 1, "cidade": 1, "estado": 1,
-                                 "volume": 1, "status": 1, "created_at": 1})
+        await db.leads.find({})
         .sort("created_at", -1)
         .limit(min(limit, 500))
         .to_list(limit)
     )
     for d in docs:
         d["id"] = d.pop("_id")
-    return {"items": docs}
+    return {"items": docs, "count": await db.leads.count_documents({})}
+
+
+@api.get("/admin/leads/export")
+async def export_leads(current=Depends(get_current_admin)):
+    docs = await db.leads.find({}).sort("created_at", -1).to_list(5000)
+    buf = io.StringIO()
+    writer = csv.writer(buf)
+    writer.writerow(
+        ["Data", "Nome", "Telefone", "Email", "Cargo", "Tipo de obra",
+         "CEP", "Cidade", "Estado", "Volume", "Status"]
+    )
+    for d in docs:
+        writer.writerow([
+            d.get("created_at", ""),
+            d.get("nome", ""),
+            d.get("telefone", ""),
+            d.get("email", ""),
+            d.get("cargo", ""),
+            d.get("tipo_obra", ""),
+            d.get("cep", ""),
+            d.get("cidade", ""),
+            d.get("estado", ""),
+            d.get("volume", ""),
+            d.get("status", ""),
+        ])
+    content = buf.getvalue()
+    fn = f"orcamentos_engemix_{now_utc().strftime('%Y%m%d_%H%M')}.csv"
+    return Response(
+        content=content,
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="{fn}"'},
+    )
 
 
 @api.patch("/admin/leads/{lead_id}")
-async def update_lead(lead_id: str, body: Dict[str, Any], current=Depends(get_current_admin)):
-    allowed = {k: v for k, v in body.items() if k in {"status"}}
-    if not allowed:
-        raise HTTPException(status_code=400, detail="Nada a atualizar")
-    r = await db.leads.update_one({"_id": lead_id}, {"$set": allowed})
+async def update_lead(lead_id: str, body: LeadStatusUpdate, current=Depends(get_current_admin)):
+    r = await db.leads.update_one({"_id": lead_id}, {"$set": {"status": body.status}})
     if r.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Lead não encontrado")
+    return {"ok": True, "status": body.status}
+
+
+@api.delete("/admin/leads/{lead_id}")
+async def delete_lead(lead_id: str, current=Depends(get_current_admin)):
+    r = await db.leads.delete_one({"_id": lead_id})
+    if r.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Lead não encontrado")
     return {"ok": True}
 
@@ -342,56 +456,7 @@ async def update_config(body: ConfigUpdate, current=Depends(get_current_admin)):
     return {"ok": True, **upd}
 
 
-# ---------- Startup ----------
-@app.on_event("startup")
-async def startup():
-    # Indexes
-    await db.admin_users.create_index("email", unique=True)
-    await db.events.create_index("created_at")
-    await db.events.create_index("type")
-    await db.events.create_index("session_id")
-    await db.leads.create_index("created_at")
-
-    # Seed admin
-    admin_email = os.environ.get("ADMIN_EMAIL", "").lower().strip()
-    admin_pass = os.environ.get("ADMIN_PASSWORD", "")
-    if admin_email and admin_pass:
-        existing = await db.admin_users.find_one({"email": admin_email})
-        if not existing:
-            await db.admin_users.insert_one(
-                {
-                    "email": admin_email,
-                    "password_hash": hash_password(admin_pass),
-                    "role": "admin",
-                    "created_at": now_utc().isoformat(),
-                }
-            )
-        elif not verify_password(admin_pass, existing["password_hash"]):
-            await db.admin_users.update_one(
-                {"email": admin_email},
-                {"$set": {"password_hash": hash_password(admin_pass)}},
-            )
-
-    # Seed default config
-    cfg = await db.config.find_one({"_id": "site"})
-    if not cfg:
-        await db.config.insert_one(
-            {
-                "_id": "site",
-                "whatsapp_number": "554121122023",
-                "whatsapp_message": "Olá! Gostaria de solicitar um orçamento de concreto.",
-                "updated_at": now_utc().isoformat(),
-            }
-        )
-
-
-@app.on_event("shutdown")
-async def shutdown():
-    client.close()
-
-
 app.include_router(api)
-
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
