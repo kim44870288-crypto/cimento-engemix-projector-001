@@ -9,6 +9,7 @@ import {
   TrendingUp,
   Target,
   Zap,
+  Info,
 } from "lucide-react";
 import {
   LineChart,
@@ -23,6 +24,7 @@ import {
   Area,
   AreaChart,
 } from "recharts";
+import DashboardDetailModal from "@/pages/admin/DashboardDetailModal";
 
 const PERIODS = [
   { v: "24h", label: "24 horas" },
@@ -33,37 +35,49 @@ const PERIODS = [
 const CARDS = [
   {
     key: "visitors_period",
+    detailKind: "visitors",
     label: "Visitantes únicos",
+    hint: "Cada aparelho/navegador diferente que abriu o site conta 1 vez. Se a mesma pessoa entrar 3 vezes pelo mesmo celular, ainda é 1 visitante.",
     icon: Users,
     color: "from-purple-500 to-fuchsia-500",
   },
   {
     key: "pageviews_period",
+    detailKind: "pageviews",
     label: "Pageviews",
+    hint: "Cada abertura de uma página do site. 1 pessoa que abre 4 páginas gera 4 pageviews.",
     icon: Eye,
     color: "from-blue-500 to-cyan-500",
   },
   {
     key: "whatsapp_clicks_period",
+    detailKind: "whatsapp",
     label: "Cliques no WhatsApp",
+    hint: "Quantas vezes clicaram no ícone flutuante do WhatsApp, nos slides do carrossel ou nos botões que abrem a conversa.",
     icon: MessageCircle,
     color: "from-emerald-500 to-teal-500",
   },
   {
     key: "leads_period",
+    detailKind: "leads_period",
     label: "Orçamentos recebidos",
+    hint: "Formulários enviados pela página /orcamento no período selecionado.",
     icon: FileText,
     color: "from-amber-500 to-orange-500",
   },
   {
     key: "events_period",
+    detailKind: "events",
     label: "Eventos totais",
+    hint: "Soma de tudo que aconteceu no site: pageviews + cliques + envios + heartbeats de sessão. Métrica geral de atividade.",
     icon: TrendingUp,
     color: "from-pink-500 to-rose-500",
   },
   {
     key: "leads",
-    label: "Orçamentos (todos os tempos)",
+    detailKind: "leads_all",
+    label: "Orçamentos · todos os tempos",
+    hint: "Total acumulado de orçamentos desde o início do sistema, ignorando o filtro de período.",
     icon: UserCheck,
     color: "from-indigo-500 to-violet-500",
   },
@@ -73,6 +87,7 @@ export default function AdminDashboard() {
   const [stats, setStats] = useState(null);
   const [presence, setPresence] = useState({ online: 0, sessions: [] });
   const [period, setPeriod] = useState("24h");
+  const [detail, setDetail] = useState(null); // { kind }
 
   useEffect(() => {
     document.title = "Dashboard · Painel";
@@ -211,28 +226,38 @@ export default function AdminDashboard() {
           const Icon = c.icon;
           const value = stats.totals[c.key] ?? 0;
           return (
-            <div
+            <button
+              type="button"
               key={c.key}
-              className="relative overflow-hidden bg-[#160828] border border-purple-500/20 rounded-2xl p-5"
+              onClick={() => setDetail({ kind: c.detailKind })}
               data-testid={`card-${c.key}`}
+              title={c.hint}
+              className="text-left relative overflow-hidden bg-[#160828] border border-purple-500/20 rounded-2xl p-5 hover:border-purple-400/60 hover:-translate-y-0.5 transition group cursor-pointer"
             >
               <div
-                className={`absolute -top-8 -right-8 w-32 h-32 rounded-full bg-gradient-to-br ${c.color} opacity-20 blur-2xl`}
+                className={`absolute -top-8 -right-8 w-32 h-32 rounded-full bg-gradient-to-br ${c.color} opacity-20 blur-2xl group-hover:opacity-40 transition`}
               />
               <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-purple-200/60 text-xs uppercase tracking-widest">
-                    {c.label}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5 text-purple-200/60 text-xs uppercase tracking-widest">
+                    <span className="truncate">{c.label}</span>
+                    <Info size={11} className="shrink-0 opacity-60" />
                   </div>
                   <div className="text-3xl font-bold mt-2">{value}</div>
+                  <p className="text-[11px] text-purple-200/50 mt-1.5 line-clamp-2 leading-snug">
+                    {c.hint}
+                  </p>
                 </div>
                 <div
-                  className={`w-11 h-11 rounded-xl bg-gradient-to-br ${c.color} flex items-center justify-center shadow-lg`}
+                  className={`w-11 h-11 rounded-xl bg-gradient-to-br ${c.color} flex items-center justify-center shadow-lg shrink-0 ml-3`}
                 >
                   <Icon size={20} className="text-white" />
                 </div>
               </div>
-            </div>
+              <div className="mt-3 text-[10px] uppercase tracking-widest text-purple-300/50 group-hover:text-purple-200 transition">
+                Clique para ver detalhes →
+              </div>
+            </button>
           );
         })}
       </div>
@@ -386,6 +411,12 @@ export default function AdminDashboard() {
           </div>
         )}
       </div>
+
+      <DashboardDetailModal
+        kind={detail?.kind}
+        period={period}
+        onClose={() => setDetail(null)}
+      />
     </div>
   );
 }

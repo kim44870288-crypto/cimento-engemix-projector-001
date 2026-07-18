@@ -330,6 +330,78 @@ async def stats(period: str = "24h", current=Depends(get_current_admin)):
     }
 
 
+@api.get("/admin/details")
+async def details(
+    kind: str,
+    period: str = "24h",
+    limit: int = 200,
+    current=Depends(get_current_admin),
+):
+    """kind: visitors | pageviews | whatsapp | events | leads_period | leads_all"""
+    hours = hours_for_period(period)
+    cutoff = (now_utc() - timedelta(hours=hours)).isoformat()
+
+    if kind == "visitors":
+        pipeline = [
+            {"$match": {"created_at": {"$gte": cutoff}, "session_id": {"$ne": ""}}},
+            {"$sort": {"created_at": 1}},
+            {
+                "$group": {
+                    "_id": "$session_id",
+                    "first_seen": {"$first": "$created_at"},
+                    "last_seen": {"$last": "$created_at"},
+                    "last_page": {"$last": "$page"},
+                    "ip": {"$last": "$ip"},
+                    "user_agent": {"$last": "$user_agent"},
+                    "events": {"$sum": 1},
+                    "pages": {"$addToSet": "$page"},
+                }
+            },
+            {"$sort": {"last_seen": -1}},
+            {"$limit": min(limit, 500)},
+        ]
+        items = await db.events.aggregate(pipeline).to_list(limit)
+        return {"kind": kind, "period": period, "items": items}
+
+    if kind == "pageviews":
+        docs = await db.events.find(
+            {"type": "pageview", "created_at": {"$gte": cutoff}},
+            {"_id": 0, "type": 1, "page": 1, "session_id": 1, "ip": 1, "created_at": 1},
+        ).sort("created_at", -1).limit(min(limit, 500)).to_list(limit)
+        return {"kind": kind, "period": period, "items": docs}
+
+    if kind == "whatsapp":
+        docs = await db.events.find(
+            {"type": {"$in": ["whatsapp_click", "whatsapp_open"]},
+             "created_at": {"$gte": cutoff}},
+            {"_id": 0, "type": 1, "page": 1, "session_id": 1, "ip": 1, "meta": 1, "created_at": 1},
+        ).sort("created_at", -1).limit(min(limit, 500)).to_list(limit)
+        return {"kind": kind, "period": period, "items": docs}
+
+    if kind == "events":
+        docs = await db.events.find(
+            {"created_at": {"$gte": cutoff}},
+            {"_id": 0, "type": 1, "page": 1, "session_id": 1, "ip": 1, "meta": 1, "created_at": 1},
+        ).sort("created_at", -1).limit(min(limit, 500)).to_list(limit)
+        return {"kind": kind, "period": period, "items": docs}
+
+    if kind == "leads_period":
+        docs = await db.leads.find(
+            {"created_at": {"$gte": cutoff}}
+        ).sort("created_at", -1).limit(min(limit, 500)).to_list(limit)
+        for d in docs:
+            d["id"] = d.pop("_id")
+        return {"kind": kind, "period": period, "items": docs}
+
+    if kind == "leads_all":
+        docs = await db.leads.find({}).sort("created_at", -1).limit(min(limit, 1000)).to_list(limit)
+        for d in docs:
+            d["id"] = d.pop("_id")
+        return {"kind": kind, "period": "all", "items": docs}
+
+    raise HTTPException(status_code=400, detail="kind inválido")
+
+
 # ---------- Admin: Activity ----------
 @api.get("/admin/activity")
 async def activity(
