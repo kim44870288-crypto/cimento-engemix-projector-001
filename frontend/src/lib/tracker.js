@@ -1,6 +1,9 @@
 import { api } from "@/lib/api";
 
 const SESSION_KEY = "engemix_sid";
+// Dedupe window for identical events (StrictMode double-invoke, fast re-renders, etc.)
+const DEDUPE_MS = 2500;
+const recent = new Map(); // key: `${type}|${page}` → timestamp
 
 function getSessionId() {
   let s = sessionStorage.getItem(SESSION_KEY);
@@ -16,6 +19,11 @@ function getSessionId() {
 
 export function track(type, meta = {}) {
   const page = window.location.pathname;
+  const key = `${type}|${page}`;
+  const now = Date.now();
+  const last = recent.get(key) || 0;
+  if (now - last < DEDUPE_MS) return; // skip duplicate
+  recent.set(key, now);
   api
     .post("/track/event", {
       type,
