@@ -2,8 +2,9 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import FloatingButtons from "@/components/FloatingButtons";
 import { ArrowRight } from "lucide-react";
-import { useEffect } from "react";
-import { trackPageview } from "@/lib/tracker";
+import { useEffect, useState } from "react";
+import { trackPageview, track } from "@/lib/tracker";
+import { api } from "@/lib/api";
 
 const CASES = [
   {
@@ -25,8 +26,20 @@ const CASES = [
 ];
 
 export default function QuemSomos() {
+  const [waHref, setWaHref] = useState(
+    "https://wa.me/554121122023?text=Ol%C3%A1!%20Gostaria%20de%20solicitar%20um%20or%C3%A7amento."
+  );
+
   useEffect(() => {
     trackPageview();
+    api
+      .get("/config/public")
+      .then((r) => {
+        const digits = (r.data.whatsapp_number || "").replace(/\D/g, "");
+        const msg = encodeURIComponent(r.data.whatsapp_message || "");
+        setWaHref(`https://wa.me/${digits}${msg ? `?text=${msg}` : ""}`);
+      })
+      .catch(() => {});
   }, []);
   return (
     <div className="bg-gray-100" data-testid="quem-somos-page">
@@ -115,7 +128,10 @@ export default function QuemSomos() {
                   {CASES.map((c, i) => (
                     <a
                       key={i}
-                      href="#"
+                      href={waHref}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() => track("case_click", { index: i, title: c.title })}
                       data-testid={`qs-case-${i}`}
                       className="group block relative bg-black text-white overflow-hidden rounded-3xl shadow-lg"
                     >
@@ -137,7 +153,10 @@ export default function QuemSomos() {
 
                 <div className="w-full pt-8">
                   <a
-                    href="#"
+                    href={waHref}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => track("outros_cases_click")}
                     data-testid="qs-outros-cases-btn"
                     className="inline-flex items-center gap-3 bg-[#E30613] hover:bg-[#b40510] text-white font-semibold px-8 py-3 rounded-full transition"
                   >
