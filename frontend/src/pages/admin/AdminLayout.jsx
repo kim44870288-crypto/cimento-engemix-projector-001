@@ -40,7 +40,7 @@ export default function AdminLayout() {
               P
             </div>
             <div>
-              <div className="text-white font-bold text-sm leading-tight">Ipatinga MG</div>
+              <div className="text-white font-bold text-sm leading-tight">Engemix</div>
               <div className="text-[9px] tracking-[0.25em] text-purple-300/70 uppercase">
                 Painel Admin
               </div>

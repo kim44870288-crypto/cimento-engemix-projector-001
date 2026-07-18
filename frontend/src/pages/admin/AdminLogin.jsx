@@ -80,7 +80,7 @@ export default function AdminLogin() {
               P
             </div>
             <div>
-              <div className="text-white font-bold leading-tight">Ipatinga MG</div>
+              <div className="text-white font-bold leading-tight">Engemix</div>
               <div className="text-[10px] tracking-[0.25em] text-purple-300/70 uppercase">
                 Painel Administrativo
               </div>
