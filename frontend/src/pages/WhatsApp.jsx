@@ -176,7 +176,7 @@ export default function WhatsAppPage() {
             className="lg:hidden text-gray-700 p-2"
             onClick={() => setMenuOpen((s) => !s)}
             aria-label={menuOpen ? "Fechar" : "Abrir menu"}
-            data-testid="wa-mobile-toggle"
+            data-testid="mobile-menu-toggle"
           >
             {menuOpen ? <X size={24} /> : <Menu size={24} />}
           </button>

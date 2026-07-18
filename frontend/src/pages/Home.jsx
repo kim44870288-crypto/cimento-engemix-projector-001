@@ -246,12 +246,16 @@ export default function Home() {
                 aria-label={`Ir para slide ${i + 1}`}
                 data-testid={`hero-dot-${i}`}
                 onClick={() => goTo(i)}
-                className={`h-2.5 w-2.5 rounded-full transition-all ${
-                  slide === i
-                    ? "bg-white scale-110"
-                    : "bg-white/50 hover:bg-white/80"
-                }`}
-              />
+                className="p-3 group"
+              >
+                <span
+                  className={`block h-2.5 w-2.5 rounded-full transition-all ${
+                    slide === i
+                      ? "bg-white scale-110"
+                      : "bg-white/50 group-hover:bg-white/80"
+                  }`}
+                />
+              </button>
             </li>
           ))}
         </ul>
