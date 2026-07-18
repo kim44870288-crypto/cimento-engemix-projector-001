@@ -84,7 +84,7 @@ export default function Footer() {
                 <li key={l.label}>
                   <a
                     href={l.href}
-                    className="block py-2 text-sm hover:underline"
+                    className="block py-3 text-sm hover:underline min-h-[40px] flex items-center"
                     data-testid={`footer-eng-${l.label.toLowerCase().replace(/\s+/g, "-")}`}
                   >
                     {l.label}
@@ -100,7 +100,7 @@ export default function Footer() {
                 <li key={l.label}>
                   <a
                     href={l.href}
-                    className="block py-2 text-sm hover:underline"
+                    className="block py-3 text-sm hover:underline min-h-[40px] flex items-center"
                     data-testid={`footer-duv-${l.label.toLowerCase().replace(/\s+/g, "-")}`}
                   >
                     {l.label}

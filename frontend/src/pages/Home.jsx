@@ -246,7 +246,7 @@ export default function Home() {
                 aria-label={`Ir para slide ${i + 1}`}
                 data-testid={`hero-dot-${i}`}
                 onClick={() => goTo(i)}
-                className="p-3 group"
+                className="p-4 group"
               >
                 <span
                   className={`block h-2.5 w-2.5 rounded-full transition-all ${
