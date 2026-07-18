@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { ChevronDown, Download, Menu, X } from "lucide-react";
-import { trackPageview } from "@/lib/tracker";
+import { trackPageview, track } from "@/lib/tracker";
+import { api } from "@/lib/api";
 
 const WA_LOGO = (
   <svg
@@ -73,15 +74,31 @@ const FOOTER_COLS = [
 export default function WhatsAppPage() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [recOpen, setRecOpen] = useState(false);
+  const [waCfg, setWaCfg] = useState({
+    whatsapp_number: "554121122023",
+    whatsapp_message: "Olá! Gostaria de solicitar um orçamento.",
+  });
 
   useEffect(() => {
     trackPageview();
     document.title = "Compartilhe no WhatsApp";
+    api
+      .get("/config/public")
+      .then((r) => setWaCfg(r.data))
+      .catch(() => {});
     return () => {
       document.title =
         "Engemix | O melhor Concreto Usinado do Brasil para sua Obra!";
     };
   }, []);
+
+  const digits = (waCfg.whatsapp_number || "").replace(/\D/g, "");
+  const msg = encodeURIComponent(waCfg.whatsapp_message || "");
+  const appLink = `https://wa.me/${digits}${msg ? `?text=${msg}` : ""}`;
+  const webLink = `https://web.whatsapp.com/send?phone=${digits}${msg ? `&text=${msg}` : ""}`;
+  const downloadLink = "https://www.whatsapp.com/download";
+
+  const handleOpen = (source) => track("whatsapp_open", { source });
 
   return (
     <div
@@ -142,7 +159,9 @@ export default function WhatsAppPage() {
               )
             )}
             <a
-              href="#"
+              href={downloadLink}
+              target="_blank"
+              rel="noopener noreferrer"
               data-testid="wa-header-download"
               className="flex items-center gap-2 bg-[#00A884] hover:bg-[#00966F] text-white text-sm font-semibold px-5 py-2 rounded-full transition"
             >
@@ -221,16 +240,22 @@ export default function WhatsAppPage() {
 
           <div className="flex flex-col items-center gap-3">
             <a
-              href="#"
+              href={appLink}
+              target="_blank"
+              rel="noopener noreferrer"
               role="button"
+              onClick={() => handleOpen("open_app")}
               data-testid="wa-open-app"
               className="w-full max-w-[240px] bg-[#00A884] hover:bg-[#00966F] text-white font-semibold py-3 rounded-full transition"
             >
               Abrir app
             </a>
             <a
-              href="#"
+              href={webLink}
+              target="_blank"
+              rel="noopener noreferrer"
               role="button"
+              onClick={() => handleOpen("open_web")}
               data-testid="wa-open-web"
               className="w-full max-w-[240px] border-2 border-[#00A884] text-[#00A884] hover:bg-[#00A884]/5 font-semibold py-3 rounded-full transition"
             >
@@ -259,8 +284,11 @@ export default function WhatsAppPage() {
             </span>
             <span>Não tem o app?</span>
             <a
-              href="#"
+              href={downloadLink}
+              target="_blank"
+              rel="noopener noreferrer"
               data-testid="wa-download"
+              onClick={() => handleOpen("download_link")}
               className="underline underline-offset-4 decoration-[#00DB40] decoration-2 font-semibold text-gray-900 hover:opacity-80"
             >
               Baixar agora
@@ -296,7 +324,9 @@ export default function WhatsAppPage() {
               </svg>
             </a>
             <a
-              href="#"
+              href={downloadLink}
+              target="_blank"
+              rel="noopener noreferrer"
               data-testid="wa-footer-download"
               className="inline-flex items-center gap-2 bg-[#00A884] hover:bg-[#00966F] text-white text-sm font-semibold px-6 py-2.5 rounded-full transition self-start"
             >

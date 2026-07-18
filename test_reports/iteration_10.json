@@ -1,0 +1,23 @@
+{
+  "summary": "Validated /whatsapp fix: page now consumes /api/config/public and builds dynamic hrefs for wa-open-app (wa.me), wa-open-web (web.whatsapp.com/send), plus static download links. Backend + frontend tests all pass.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_whatsapp_config.py",
+    "/app/test_reports/pytest/whatsapp_config.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "server.py PUT /api/admin/config persists whatsapp_number as-is (with '+', spaces, parens, dashes). Consider normalizing to digits on the backend so downstream consumers don't each re-implement the strip. Currently the frontend correctly does number.replace(/\\D/g,'').",
+    "TrackBody uses 'meta' field; tracker.js sends 'meta' — consistent. Fine.",
+    "WhatsApp.jsx defaults waCfg to hardcoded number/message before /config/public resolves — reasonable fallback for no-flash UX."
+  ],
+  "updated_files": ["/app/backend/tests/test_whatsapp_config.py"],
+  "success_rate": {"backend": "100% (3/3)", "frontend": "100% (all hrefs + reactivity verified)"},
+  "test_credentials": "donas@gmail.com / Seinao@123 (from /app/memory/test_credentials.md)",
+  "seed_data_creation": "None. Config was mutated during test then restored to original {5511987654321, 'Olá Engemix, quero um orçamento!'}.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "All 5 wa-* data-testids present and correct: wa-open-app -> https://wa.me/{digits}?text={encoded}; wa-open-web -> https://web.whatsapp.com/send?phone={digits}&text={encoded}; wa-download / wa-header-download / wa-footer-download -> https://www.whatsapp.com/download. target=_blank on all. Non-digit chars in stored number are stripped by frontend. Message URL-encoding handles accents/spaces/punct. Admin PUT /api/admin/config immediately reflected in /api/config/public and page reload updates hrefs. Track event 'whatsapp_open' with meta.source (open_app/open_web/download_link) appears in /api/admin/activity.",
+  "rca of the issue": "Previous bug: buttons had href='#'. Fix in WhatsApp.jsx introduced an api.get('/config/public') in useEffect, computed digits = number.replace(/\\D/g,'') and msg = encodeURIComponent(message), assembling appLink/webLink dynamically. Verified end-to-end."
+}
