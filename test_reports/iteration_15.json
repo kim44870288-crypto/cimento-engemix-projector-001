@@ -1,0 +1,29 @@
+{
+  "summary": "Post-restart health verification. All backend endpoints (8/8) and frontend pages/flows pass. MongoDB persistence confirmed — 3 seeded leads (Test User, Teste QA, teste) intact. Admin login + /leads render correctly. Public site regression (home/quem-somos/orcamento/whatsapp) OK. No code changes needed — only test file created.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "AdminLeads (leads-status-filter select)", "issues": ["React hydration warning: <span> cannot be a child of <option>. AdminLeads.jsx line 140 — cosmetic console warning, does not affect functionality"]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_post_restart.py",
+    "/app/test_reports/pytest/post_restart.xml"
+  ],
+  "action_items": [
+    "(Optional/low priority) Fix AdminLeads.jsx line 140: remove <span> wrapper inside <option> to eliminate hydration warning"
+  ],
+  "critical_code_review_comments": [
+    "API response shape inconsistency: /api/admin/leads and /api/admin/activity return {items,count/server_time} while /api/admin/config returns flat dict. Frontend must be consistent (confirmed working).",
+    "Lead POST accepts Portuguese fields (nome, telefone) — no english alias support; matches frontend Orcamento form."
+  ],
+  "updated_files": ["/app/backend/tests/test_post_restart.py (new)"],
+  "success_rate": {"backend": "100% (8/8)", "frontend": "100%"},
+  "test_credentials": "donas@gmail.com / Seinao@123 — WORKING",
+  "seed_data_creation": "Created TEST_PostRestart lead via POST /api/leads for regression verification (visible in /admin/leads).",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Backend test file /app/backend/tests/test_post_restart.py covers health, login, /admin/leads, /admin/stats, /admin/activity, /admin/config, and lead creation regression. Use for future smoke tests. Correct login testids: admin-login-email, admin-login-password, admin-login-submit. Lead POST payload requires Portuguese fields: {nome, telefone, email?, cargo?}. Admin list endpoints return {items:[], count/server_time} shape."
+}
