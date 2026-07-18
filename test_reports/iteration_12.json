@@ -1,0 +1,32 @@
+{
+  "summary": "Auditoria mobile completa em 12 combinações (4 rotas x 3 viewports: iPhone SE 375x667, iPhone 14 393x852, Pixel 5 393x851). Todas as 12 combinações passam no critério principal: overflow-x = 0px (scrollWidth === clientWidth). Nenhum erro de console/pageerror. Nenhuma imagem quebrada. Header fixo com hamburger funcional em /home, /quem-somos, /orcamento (drawer abre com todos os itens: Quem somos, Orçamento, Produtos, Compre Aqui, Nosso App, Saiba mais, Conferir unidades, FAQ, Calculadora, Blog). Página /whatsapp tem seu próprio header (65px) com hamburger visível mas SEM data-testid='mobile-menu-toggle'. Fluxo /orcamento: form preenchido (orc-telefone, orc-nome) + submit (orc-submit) abre modal (data-testid='orc-success-modal') com logo, X, 'Ir para o WhatsApp' (verde), 'Continuar navegando'; ESC fecha corretamente. Floating buttons (float-whatsapp 56x56, float-calc 48x48) visíveis à direita. Back-to-top aparece após scroll 400px+ (48x48). Padding do header respeitado — nenhum conteúdo cortado. NÃO foi encontrado nenhum problema de responsividade, sobreposição, overflow horizontal ou texto cortado.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Home hero carousel (mobile todos os viewports)", "issues": ["Dots de navegação do carousel com tap target 10x10px (bem abaixo da diretriz Apple/Android de 40x40 e WCAG 2.5.5 de 44x44). Aumentar área tocável via padding invisível ou aumentar o próprio botão."]},
+      {"screen": "Footer público (todas as rotas em mobile)", "issues": ["Links de texto no footer (Quem somos, Orçamento, FAQ, Blog, Política de privacidade etc.) têm altura ~16-26px — abaixo de 40x40 recomendado.", "Ícones sociais 36x36 — 4px abaixo da diretriz mínima 40x40."]},
+      {"screen": "/whatsapp header (mobile)", "issues": ["Botão hamburger no header da página /whatsapp NÃO tem atributo data-testid='mobile-menu-toggle' (as outras rotas têm). Gap de testabilidade."]},
+      {"screen": "Home e demais páginas com FloatingButtons", "issues": ["Botão back-to-top aparece no canto INFERIOR ESQUERDO (x=8, largura 48) enquanto os floating buttons (whatsapp/calc) estão no canto inferior DIREITO. Convenção usual é back-to-top também à direita — validar se é intencional."]}
+    ]
+  },
+  "test_report_links": [],
+  "action_items": [
+    "OPCIONAL/A11Y: aumentar área tocável dos dots do carousel Home (mín 40x40) — atualmente 10x10.",
+    "OPCIONAL/A11Y: aumentar área tocável de links de texto e ícones sociais do Footer para >=40x40.",
+    "TESTABILIDADE: adicionar data-testid='mobile-menu-toggle' ao hamburger do header da /whatsapp para consistência com as demais rotas.",
+    "UX: revisar posição do botão back-to-top (atualmente à esquerda; convenção é à direita)."
+  ],
+  "critical_code_review_comments": [
+    "Nenhum bug crítico. Layout mobile robusto — 12/12 combinações sem overflow-x, sem quebra de layout, sem erros de console. Modal de sucesso do orçamento respeita ESC e backdrop.",
+    "Diretrizes de acessibilidade táctil (WCAG 2.5.5 / Apple HIG / Material) não são atendidas em vários pontos: dots de carousel e links/ícones de footer. Recomendado, não bloqueante."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (skipped)", "frontend": "100% overflow-x tests, 100% funcionalidade crítica (drawer, form, modal, floats, back-to-top)"},
+  "seed_data_creation": "",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Auditoria mobile 12 combinações OK. Únicas observações são de tap target size (a11y) e um data-testid ausente no header do /whatsapp. Não há bugs funcionais nem de layout.",
+  "rca of the issue": "N/A — nenhum bug encontrado; apenas melhorias de acessibilidade e testabilidade."
+}
