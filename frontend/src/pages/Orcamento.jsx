@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import FloatingButtons from "@/components/FloatingButtons";
+import OrcamentoSucessoModal from "@/components/OrcamentoSucessoModal";
 import { MapPin, Mail, Phone } from "lucide-react";
 import { toast, Toaster } from "sonner";
 import { api } from "@/lib/api";
@@ -40,6 +41,8 @@ export default function Orcamento() {
     volume: "",
   });
   const [sending, setSending] = useState(false);
+  const [successOpen, setSuccessOpen] = useState(false);
+  const [lastNome, setLastNome] = useState("");
 
   useEffect(() => {
     trackPageview();
@@ -67,7 +70,8 @@ export default function Orcamento() {
         volume: form.volume,
       });
       track("lead_submitted");
-      toast.success("Recebemos sua solicitação! Em breve entraremos em contato.");
+      setLastNome(form.nome);
+      setSuccessOpen(true);
       setForm({
         telefone: "",
         nome: "",
@@ -311,6 +315,11 @@ export default function Orcamento() {
 
       <FloatingButtons />
       <Footer />
+      <OrcamentoSucessoModal
+        open={successOpen}
+        onClose={() => setSuccessOpen(false)}
+        nome={lastNome}
+      />
     </div>
   );
 }
