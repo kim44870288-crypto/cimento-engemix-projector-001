@@ -39,30 +39,6 @@ export default function FloatingButtons() {
         data-testid="floating-actions"
       >
         <menu className="flex flex-col justify-end items-end gap-3 m-0 p-0">
-          {/* Calculadora */}
-          <li>
-            <a
-              href="#"
-              data-testid="float-calc"
-              aria-label="Calculadora de Concreto"
-              className="w-12 h-12 flex justify-center items-center bg-[#790800] rounded-l-xl shadow-lg hover:bg-[#5c0600] transition"
-            >
-              <svg
-                width="29"
-                height="40"
-                className="w-5 h-6 transition-transform duration-500 hover:scale-110"
-                viewBox="0 0 29 40"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M4.60985 0H24.3901C25.4393 0 26.4455 0.421427 27.1874 1.17157C27.9293 1.92172 28.3461 2.93913 28.3461 4V36C28.3461 37.0609 27.9293 38.0783 27.1874 38.8284C26.4455 39.5786 25.4393 40 24.3901 40H4.60985C3.56064 40 2.55441 39.5786 1.81251 38.8284C1.0706 38.0783 0.653809 37.0609 0.653809 36V4C0.653809 2.93913 1.0706 1.92172 1.81251 1.17157C2.55441 0.421427 3.56064 0 4.60985 0ZM4.60985 4V12H24.3901V4H4.60985ZM4.60985 16V20H8.5659V16H4.60985ZM12.5219 16V20H16.478V16H12.5219ZM20.434 16V20H24.3901V16H20.434ZM4.60985 24V28H8.5659V24H4.60985ZM12.5219 24V28H16.478V24H12.5219ZM20.434 24V28H24.3901V24H20.434ZM4.60985 32V36H8.5659V32H4.60985ZM12.5219 32V36H16.478V32H12.5219ZM20.434 32V36H24.3901V32H20.434Z"
-                  fill="white"
-                />
-              </svg>
-            </a>
-          </li>
-
           {/* WhatsApp */}
           <li>
             <a
