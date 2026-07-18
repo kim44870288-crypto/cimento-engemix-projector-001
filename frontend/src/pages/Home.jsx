@@ -289,7 +289,10 @@ export default function Home() {
                 todo território nacional.
               </div>
               <a
-                href="#"
+                href={waHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => track("quem_somos_saiba_mais_click")}
                 data-testid="quem-somos-saiba-mais-btn"
                 className="inline-block bg-[#790800] text-white font-semibold px-6 py-3 rounded-full hover:bg-[#5c0600] transition"
               >
