@@ -28,6 +28,21 @@ const TIPOS_OBRA = [
   "Edificações e Obras Especiais",
 ];
 
+const SOLUCOES = [
+  {
+    title: "Produção Técnica",
+    desc: "Produção de concreto usinado com controle industrial e padronização rigorosa, garantindo consistência, qualidade e conformidade técnica para diferentes tipos de obras, independentemente da complexidade, escala ou aplicação estrutural.",
+  },
+  {
+    title: "Soluções aplicadas",
+    desc: "Oferta de linhas de concreto desenvolvidas para usos específicos da construção civil, atendendo demandas como edificações, pisos, pavimentação e obras especiais, com produtos adequados às condições de uso, desempenho esperado e exigências do projeto.",
+  },
+  {
+    title: "Logística Estratégica",
+    desc: "Ampla operação que assegura fornecimento confiável, pontualidade e qualidade do concreto até o canteiro de obras, apoiando o cumprimento de prazos e a execução eficiente de projetos em diferentes regiões.",
+  },
+];
+
 export default function Orcamento() {
   const [form, setForm] = useState({
     telefone: "",
@@ -43,9 +58,20 @@ export default function Orcamento() {
   const [sending, setSending] = useState(false);
   const [successOpen, setSuccessOpen] = useState(false);
   const [lastNome, setLastNome] = useState("");
+  const [waHref, setWaHref] = useState(
+    "https://wa.me/554121122023?text=Ol%C3%A1!%20Gostaria%20de%20solicitar%20um%20or%C3%A7amento."
+  );
 
   useEffect(() => {
     trackPageview();
+    api
+      .get("/config/public")
+      .then((r) => {
+        const digits = (r.data.whatsapp_number || "").replace(/\D/g, "");
+        const msg = encodeURIComponent(r.data.whatsapp_message || "");
+        setWaHref(`https://wa.me/${digits}${msg ? `?text=${msg}` : ""}`);
+      })
+      .catch(() => {});
   }, []);
 
   const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
@@ -309,6 +335,50 @@ export default function Orcamento() {
                 </form>
               </div>
             </div>
+          </div>
+        </section>
+
+        {/* Soluções em concreto - cards clicáveis para WhatsApp */}
+        <section className="py-12 lg:py-16" data-testid="orc-solucoes-section">
+          <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-start mb-10">
+            <h2
+              className="text-3xl lg:text-5xl font-bold text-gray-900 leading-tight"
+              data-testid="orc-solucoes-title"
+            >
+              Soluções em concreto
+              <br />
+              para sua obra
+            </h2>
+            <p className="text-gray-700 text-base lg:text-lg">
+              A Engemix oferece concreto usinado e soluções técnicas
+              desenvolvidas para atender às exigências de qualidade,
+              produtividade e segurança em obras de diferentes portes e
+              complexidades.
+            </p>
+          </div>
+
+          <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
+            {SOLUCOES.map((s, i) => (
+              <a
+                key={i}
+                href={waHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() =>
+                  track("solucao_click", { index: i, title: s.title })
+                }
+                data-testid={`orc-solucao-${i}`}
+                className="group block bg-white border-2 border-[#E30613] rounded-2xl p-6 lg:p-8 hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
+              >
+                <h3 className="text-xl lg:text-2xl font-bold text-gray-900 group-hover:text-[#E30613] transition">
+                  {s.title}
+                </h3>
+                <hr className="border-gray-200 my-4" />
+                <p className="text-gray-700 leading-relaxed text-sm lg:text-base">
+                  {s.desc}
+                </p>
+              </a>
+            ))}
           </div>
         </section>
       </main>
