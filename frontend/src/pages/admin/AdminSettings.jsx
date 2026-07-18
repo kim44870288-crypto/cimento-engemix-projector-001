@@ -1,12 +1,14 @@
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import { toast, Toaster } from "sonner";
-import { MessageCircle, Save, ExternalLink } from "lucide-react";
+import { MessageCircle, Save, ExternalLink, History } from "lucide-react";
+import WhatsAppHistoryModal from "./WhatsAppHistoryModal";
 
 export default function AdminSettings() {
   const [cfg, setCfg] = useState({ whatsapp_number: "", whatsapp_message: "" });
   const [saving, setSaving] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
 
   useEffect(() => {
     document.title = "Configurações · Painel";
@@ -117,8 +119,22 @@ export default function AdminSettings() {
           >
             <ExternalLink size={14} /> Testar link no WhatsApp
           </a>
+          <button
+            type="button"
+            onClick={() => setHistoryOpen(true)}
+            data-testid="cfg-history-btn"
+            className="ml-auto inline-flex items-center gap-2 border border-purple-500/40 hover:border-purple-400 text-purple-100 font-semibold px-5 py-2.5 rounded-xl transition hover:bg-purple-500/10"
+          >
+            <History size={16} />
+            Histórico
+          </button>
         </div>
       </form>
+
+      <WhatsAppHistoryModal
+        open={historyOpen}
+        onClose={() => setHistoryOpen(false)}
+      />
     </div>
   );
 }

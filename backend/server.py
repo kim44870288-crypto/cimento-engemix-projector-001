@@ -148,14 +148,39 @@ async def lifespan(_app: FastAPI):
     # Seed default config
     cfg = await db.config.find_one({"_id": "site"})
     if not cfg:
+        now_iso = now_utc().isoformat()
+        default_number = "554121122023"
         await db.config.insert_one(
             {
                 "_id": "site",
-                "whatsapp_number": "554121122023",
+                "whatsapp_number": default_number,
                 "whatsapp_message": "Olá! Gostaria de solicitar um orçamento de concreto.",
-                "updated_at": now_utc().isoformat(),
+                "updated_at": now_iso,
             }
         )
+        # Seed history with initial entry (open)
+        await db.whatsapp_history.insert_one(
+            {
+                "_id": str(uuid.uuid4()),
+                "number": default_number,
+                "added_at": now_iso,
+                "removed_at": None,
+                "changed_by": "system:seed",
+            }
+        )
+    else:
+        # Backfill: if history has no open entry, create one for the current number
+        has_open = await db.whatsapp_history.find_one({"removed_at": None})
+        if not has_open and cfg.get("whatsapp_number"):
+            await db.whatsapp_history.insert_one(
+                {
+                    "_id": str(uuid.uuid4()),
+                    "number": cfg["whatsapp_number"],
+                    "added_at": cfg.get("updated_at") or now_utc().isoformat(),
+                    "removed_at": None,
+                    "changed_by": "system:backfill",
+                }
+            )
     yield
     client.close()
 
@@ -523,9 +548,62 @@ async def update_config(body: ConfigUpdate, current=Depends(get_current_admin)):
     upd = {k: v for k, v in body.model_dump().items() if v is not None}
     if not upd:
         raise HTTPException(status_code=400, detail="Nada a atualizar")
+
+    # Track WhatsApp number history whenever the number actually changes
+    if "whatsapp_number" in upd:
+        current_doc = await db.config.find_one({"_id": "site"}) or {}
+        prev_number = current_doc.get("whatsapp_number")
+        new_number = upd["whatsapp_number"]
+        if prev_number != new_number:
+            now_iso = now_utc().isoformat()
+            # Close previous open entry (if any)
+            await db.whatsapp_history.update_many(
+                {"removed_at": None},
+                {"$set": {"removed_at": now_iso}},
+            )
+            # Insert new open entry
+            await db.whatsapp_history.insert_one(
+                {
+                    "_id": str(uuid.uuid4()),
+                    "number": new_number,
+                    "added_at": now_iso,
+                    "removed_at": None,
+                    "changed_by": current.get("email", ""),
+                }
+            )
+
     upd["updated_at"] = now_utc().isoformat()
     await db.config.update_one({"_id": "site"}, {"$set": upd}, upsert=True)
     return {"ok": True, **upd}
+
+
+@api.get("/admin/config/whatsapp-history")
+async def whatsapp_history(current=Depends(get_current_admin)):
+    cursor = db.whatsapp_history.find({}).sort("added_at", -1)
+    items = []
+    async for d in cursor:
+        added = d.get("added_at")
+        removed = d.get("removed_at")
+        duration_seconds = None
+        try:
+            start = datetime.fromisoformat(added) if added else None
+            end = datetime.fromisoformat(removed) if removed else now_utc()
+            if start:
+                duration_seconds = int((end - start).total_seconds())
+        except Exception:
+            duration_seconds = None
+        items.append(
+            {
+                "id": d.get("_id"),
+                "number": d.get("number", ""),
+                "added_at": added,
+                "removed_at": removed,
+                "duration_seconds": duration_seconds,
+                "is_current": removed is None,
+                "changed_by": d.get("changed_by", ""),
+            }
+        )
+    return {"items": items}
 
 
 app.include_router(api)
