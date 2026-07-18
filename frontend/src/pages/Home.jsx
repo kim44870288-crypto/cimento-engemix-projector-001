@@ -306,16 +306,21 @@ export default function Home() {
         >
           <ul className="flex flex-wrap justify-center items-center gap-6 lg:gap-12">
             {BENEFITS.map((b, i) => (
-              <li
-                key={i}
-                className="w-full bg-white px-2 lg:px-4 py-4 lg:py-5 flex flex-col justify-start items-center text-center gap-2 max-w-[169px] lg:max-w-52 min-h-[181px] lg:min-h-[240px] rounded-2xl lg:rounded-3xl transition hover:shadow-[0_0_28px_rgba(255,255,255,0.35)]"
-                data-testid={`beneficio-${i}`}
-              >
-                <div className="lg:h-20 flex items-center">{b.icon}</div>
-                <h3 className="text-lg lg:text-xl font-semibold text-[#790800]">
-                  {b.title}
-                </h3>
-                <p className="text-sm lg:text-base">{b.desc}</p>
+              <li key={i}>
+                <a
+                  href={waHref}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => track("benefit_click", { index: i, title: b.title })}
+                  data-testid={`beneficio-${i}`}
+                  className="w-full bg-white px-2 lg:px-4 py-4 lg:py-5 flex flex-col justify-start items-center text-center gap-2 max-w-[169px] lg:max-w-52 min-h-[181px] lg:min-h-[240px] rounded-2xl lg:rounded-3xl transition hover:shadow-[0_0_28px_rgba(255,255,255,0.35)] hover:-translate-y-1 duration-300"
+                >
+                  <div className="lg:h-20 flex items-center">{b.icon}</div>
+                  <h3 className="text-lg lg:text-xl font-semibold text-[#790800]">
+                    {b.title}
+                  </h3>
+                  <p className="text-sm lg:text-base">{b.desc}</p>
+                </a>
               </li>
             ))}
           </ul>
@@ -340,7 +345,10 @@ export default function Home() {
                   </p>
                   <div className="flex justify-center">
                     <a
-                      href="#"
+                      href={waHref}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() => track("produto_click", { tipo: "pequenas" })}
                       data-testid="produto-pequenas-btn"
                       className="inline-block bg-[#790800] text-white font-semibold px-6 py-3 rounded-full hover:bg-[#5c0600] transition"
                     >
@@ -364,7 +372,10 @@ export default function Home() {
                   </p>
                   <div className="flex justify-center">
                     <a
-                      href="#"
+                      href={waHref}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() => track("produto_click", { tipo: "grandes" })}
                       data-testid="produto-grandes-btn"
                       className="inline-block bg-[#790800] text-white font-semibold px-6 py-3 rounded-full hover:bg-[#5c0600] transition"
                     >
@@ -392,7 +403,10 @@ export default function Home() {
                   </p>
                   <div>
                     <a
-                      href="#"
+                      href={waHref}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() => track("pavimento_click")}
                       data-testid="pavimento-saiba-mais-btn"
                       className="inline-block bg-[#790800] text-white font-semibold px-6 py-3 rounded-full hover:bg-[#5c0600] transition"
                     >
