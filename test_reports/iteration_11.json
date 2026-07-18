@@ -1,0 +1,22 @@
+{
+  "summary": "Frontend-only verification of WhatsApp deep-link bug fix. Validated hrefs on floating WhatsApp button, hero slides, and /whatsapp page buttons. All match expected format and use dynamic config from /api/config/public.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "wa-open-app uses whatsapp:// protocol which works on mobile/desktop with app installed; browsers without app may show a 'no handler' error - consider a fallback."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A", "frontend": "100%"},
+  "test_credentials": "donas@gmail.com / Seinao@123 (not required for this test)",
+  "seed_data_creation": "None",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Verified via Playwright href attribute inspection (external URLs not navigated). On /home: [data-testid=float-whatsapp] is <a target=_blank href=https://wa.me/{digits}?text={msg}>. hero-slide-link-0..5 all <a> to wa.me. On /whatsapp: wa-open-app href starts with whatsapp://send, wa-open-web with https://web.whatsapp.com/send, wa-download with https://www.whatsapp.com/download. Config values (5511987654321 / 'Olá Engemix, quero um orçamento!') from /api/config/public correctly reflected in all hrefs.",
+  "rca of the issue": "N/A - bug fix verified working."
+}

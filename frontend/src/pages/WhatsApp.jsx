@@ -94,7 +94,7 @@ export default function WhatsAppPage() {
 
   const digits = (waCfg.whatsapp_number || "").replace(/\D/g, "");
   const msg = encodeURIComponent(waCfg.whatsapp_message || "");
-  const appLink = `https://wa.me/${digits}${msg ? `?text=${msg}` : ""}`;
+  const appLink = `whatsapp://send?phone=${digits}${msg ? `&text=${msg}` : ""}`;
   const webLink = `https://web.whatsapp.com/send?phone=${digits}${msg ? `&text=${msg}` : ""}`;
   const downloadLink = "https://www.whatsapp.com/download";
 

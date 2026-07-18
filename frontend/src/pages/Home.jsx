@@ -1,9 +1,9 @@
 import { useEffect, useState, useCallback } from "react";
-import { Link } from "react-router-dom";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import FloatingButtons from "@/components/FloatingButtons";
 import { trackPageview, track } from "@/lib/tracker";
+import { api } from "@/lib/api";
 
 const HERO_SLIDES = [
   {
@@ -134,9 +134,20 @@ const BENEFITS = [
 
 export default function Home() {
   const [slide, setSlide] = useState(0);
+  const [waHref, setWaHref] = useState(
+    "https://wa.me/554121122023?text=Ol%C3%A1!%20Gostaria%20de%20solicitar%20um%20or%C3%A7amento."
+  );
 
   useEffect(() => {
     trackPageview();
+    api
+      .get("/config/public")
+      .then((r) => {
+        const digits = (r.data.whatsapp_number || "").replace(/\D/g, "");
+        const msg = encodeURIComponent(r.data.whatsapp_message || "");
+        setWaHref(`https://wa.me/${digits}${msg ? `?text=${msg}` : ""}`);
+      })
+      .catch(() => {});
   }, []);
 
   const goTo = useCallback(
@@ -177,8 +188,10 @@ export default function Home() {
               role="tabpanel"
               aria-label={`${i + 1} of ${HERO_SLIDES.length}`}
             >
-              <Link
-                to="/whatsapp"
+              <a
+                href={waHref}
+                target="_blank"
+                rel="noopener noreferrer"
                 aria-label={s.alt}
                 data-testid={`hero-slide-link-${i}`}
                 onClick={() => track("hero_slide_click", { slide: i })}
@@ -193,7 +206,7 @@ export default function Home() {
                     decoding={i === 0 ? "sync" : "async"}
                   />
                 </picture>
-              </Link>
+              </a>
             </div>
           ))}
         </div>

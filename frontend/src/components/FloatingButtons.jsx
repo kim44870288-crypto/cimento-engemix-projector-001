@@ -1,16 +1,34 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
 import { track } from "@/lib/tracker";
+import { api } from "@/lib/api";
 
 export default function FloatingButtons() {
   const [showTop, setShowTop] = useState(false);
-  const [waLink, setWaLink] = useState("/whatsapp");
+  const [waHref, setWaHref] = useState(
+    "https://wa.me/554121122023?text=Ol%C3%A1!%20Gostaria%20de%20solicitar%20um%20or%C3%A7amento."
+  );
 
   useEffect(() => {
     const onScroll = () => setShowTop(window.scrollY > 400);
     window.addEventListener("scroll", onScroll, { passive: true });
     onScroll();
     return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  useEffect(() => {
+    let mounted = true;
+    api
+      .get("/config/public")
+      .then((r) => {
+        if (!mounted) return;
+        const digits = (r.data.whatsapp_number || "").replace(/\D/g, "");
+        const msg = encodeURIComponent(r.data.whatsapp_message || "");
+        setWaHref(`https://wa.me/${digits}${msg ? `?text=${msg}` : ""}`);
+      })
+      .catch(() => {});
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   return (
@@ -47,8 +65,10 @@ export default function FloatingButtons() {
 
           {/* WhatsApp */}
           <li>
-            <Link
-              to="/whatsapp"
+            <a
+              href={waHref}
+              target="_blank"
+              rel="noopener noreferrer"
               data-testid="float-whatsapp"
               aria-label="Fale conosco no WhatsApp"
               onClick={() => track("whatsapp_click", { source: "floating" })}
@@ -85,7 +105,7 @@ export default function FloatingButtons() {
                   </linearGradient>
                 </defs>
               </svg>
-            </Link>
+            </a>
           </li>
         </menu>
       </aside>
