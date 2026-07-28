@@ -61,7 +61,7 @@ export default function Orcamento() {
   const [waHref, setWaHref] = useState(
     "https://wa.me/554121122023?text=Ol%C3%A1!%20Gostaria%20de%20solicitar%20um%20or%C3%A7amento."
   );
-  const [phone, setPhone] = useState("+55 41 2112-2023");
+  const [phone, setPhone] = useState("");
 
   useEffect(() => {
     trackPageview();
@@ -182,13 +182,21 @@ export default function Orcamento() {
                   <div>
                     <p className="font-bold text-gray-800">Nos ligue</p>
                     <p className="text-gray-600">Seg–Sex de 8h às 18h</p>
-                    <a
-                      href={`tel:${phone.replace(/[^\d+]/g, "")}`}
-                      className="font-bold text-gray-800 hover:text-[#E30613]"
-                      data-testid="orc-tel"
-                    >
-                      {phone}
-                    </a>
+                    {phone ? (
+                      <a
+                        href={`tel:${phone.replace(/[^\d+]/g, "")}`}
+                        className="font-bold text-gray-800 hover:text-[#E30613]"
+                        data-testid="orc-tel"
+                      >
+                        {phone}
+                      </a>
+                    ) : (
+                      <span
+                        className="inline-block h-5 w-40 bg-gray-200 rounded animate-pulse"
+                        aria-label="Carregando telefone"
+                        data-testid="orc-tel-skeleton"
+                      />
+                    )}
                   </div>
                 </div>
               </div>

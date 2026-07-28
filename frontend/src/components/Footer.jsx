@@ -16,7 +16,7 @@ const DUVIDAS_LINKS = [
 ];
 
 export default function Footer() {
-  const [phone, setPhone] = useState("+55 41 2112-2023");
+  const [phone, setPhone] = useState("");
   useEffect(() => {
     api
       .get("/config/public")
@@ -25,7 +25,7 @@ export default function Footer() {
       })
       .catch(() => {});
   }, []);
-  const telHref = `tel:${phone.replace(/[^\d+]/g, "")}`;
+  const telHref = phone ? `tel:${phone.replace(/[^\d+]/g, "")}` : "#";
   return (
     <footer
       className="bg-[#0000bf] w-full text-white"
@@ -132,13 +132,21 @@ export default function Footer() {
               <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M17.427 13.362c-.153 1.111-.725 2.132-1.609 2.87-.884.738-2.02 1.144-3.194 1.143C5.802 17.375.25 12.076.25 5.562a5.325 5.325 0 011.197-3.048A5.352 5.352 0 014.454.979a2.42 2.42 0 011.479.163c.257.141.46.357.578.617L7.697 5.627c.09.199.127.416.107.632a1.516 1.516 0 01-.665.874l-1.789 2.025c.644 1.248 2.012 2.543 3.337 3.159l2.091-1.699a1.5 1.5 0 01.635-.185c.227-.02.457.015.667.102l4.049 1.732c.273.112.5.305.648.551.148.246.209.53.173.812z" fill="white" />
               </svg>
-              <a
-                className="text-base font-medium hover:underline"
-                href={telHref}
-                data-testid="footer-tel-1"
-              >
-                {phone}
-              </a>
+              {phone ? (
+                <a
+                  className="text-base font-medium hover:underline"
+                  href={telHref}
+                  data-testid="footer-tel-1"
+                >
+                  {phone}
+                </a>
+              ) : (
+                <span
+                  className="inline-block h-5 w-40 bg-white/20 rounded animate-pulse"
+                  aria-label="Carregando telefone"
+                  data-testid="footer-tel-skeleton"
+                />
+              )}
             </li>
           </ul>
         </div>
