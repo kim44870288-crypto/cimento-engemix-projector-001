@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import { toast, Toaster } from "sonner";
-import { MessageCircle, Save, ExternalLink, History } from "lucide-react";
+import { MessageCircle, Save, ExternalLink, History, Phone } from "lucide-react";
 import WhatsAppHistoryModal from "./WhatsAppHistoryModal";
 
 export default function AdminSettings() {
-  const [cfg, setCfg] = useState({ whatsapp_number: "", whatsapp_message: "" });
+  const [cfg, setCfg] = useState({ whatsapp_number: "", whatsapp_message: "", phone: "" });
   const [saving, setSaving] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -30,6 +30,7 @@ export default function AdminSettings() {
       await api.put("/admin/config", {
         whatsapp_number: digits,
         whatsapp_message: cfg.whatsapp_message,
+        phone: cfg.phone,
       });
       toast.success("Configuração salva! O site público já foi atualizado.");
       setCfg((c) => ({ ...c, whatsapp_number: digits }));
@@ -98,6 +99,34 @@ export default function AdminSettings() {
             data-testid="cfg-wa-message"
             className="w-full rounded-xl bg-[#0d0518] border border-purple-500/30 text-white px-4 py-3 focus:outline-none focus:ring-2 focus:ring-purple-400 resize-none"
           />
+        </div>
+
+        <div className="pt-2 border-t border-purple-500/20">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-11 h-11 rounded-xl bg-blue-500/20 border border-blue-500/40 flex items-center justify-center text-blue-300">
+              <Phone size={20} />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold">Telefone de contato</h3>
+              <p className="text-xs text-purple-200/60">
+                Exibido na página /orçamento e no rodapé do site
+              </p>
+            </div>
+          </div>
+          <label className="block text-xs font-bold tracking-widest text-purple-200/70 uppercase mb-2">
+            Número exibido
+          </label>
+          <input
+            type="text"
+            value={cfg.phone}
+            onChange={(e) => setCfg({ ...cfg, phone: e.target.value })}
+            placeholder="+55 41 2112-2023"
+            data-testid="cfg-phone"
+            className="w-full h-11 rounded-xl bg-[#0d0518] border border-purple-500/30 text-white px-4 focus:outline-none focus:ring-2 focus:ring-purple-400"
+          />
+          <p className="mt-1 text-[11px] text-purple-200/50">
+            Formato livre — como será exibido ao visitante (ex: +55 41 2112-2023)
+          </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">

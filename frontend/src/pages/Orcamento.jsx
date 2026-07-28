@@ -61,6 +61,7 @@ export default function Orcamento() {
   const [waHref, setWaHref] = useState(
     "https://wa.me/554121122023?text=Ol%C3%A1!%20Gostaria%20de%20solicitar%20um%20or%C3%A7amento."
   );
+  const [phone, setPhone] = useState("+55 41 2112-2023");
 
   useEffect(() => {
     trackPageview();
@@ -70,6 +71,7 @@ export default function Orcamento() {
         const digits = (r.data.whatsapp_number || "").replace(/\D/g, "");
         const msg = encodeURIComponent(r.data.whatsapp_message || "");
         setWaHref(`https://wa.me/${digits}${msg ? `?text=${msg}` : ""}`);
+        if (r.data.phone) setPhone(r.data.phone);
       })
       .catch(() => {});
   }, []);
@@ -181,11 +183,11 @@ export default function Orcamento() {
                     <p className="font-bold text-gray-800">Nos ligue</p>
                     <p className="text-gray-600">Seg–Sex de 8h às 18h</p>
                     <a
-                      href="tel:+554121122023"
+                      href={`tel:${phone.replace(/[^\d+]/g, "")}`}
                       className="font-bold text-gray-800 hover:text-[#E30613]"
                       data-testid="orc-tel"
                     >
-                      +55 41 2112-2023
+                      {phone}
                     </a>
                   </div>
                 </div>

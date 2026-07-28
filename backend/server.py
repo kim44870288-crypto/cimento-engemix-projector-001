@@ -113,6 +113,7 @@ class LeadStatusUpdate(BaseModel):
 class ConfigUpdate(BaseModel):
     whatsapp_number: Optional[str] = None
     whatsapp_message: Optional[str] = None
+    phone: Optional[str] = None
 
 
 # ---------- Lifespan ----------
@@ -204,6 +205,7 @@ async def get_public_config():
         "whatsapp_message": doc.get(
             "whatsapp_message", "Olá! Gostaria de solicitar um orçamento."
         ),
+        "phone": doc.get("phone", "+55 41 2112-2023"),
     }
 
 
@@ -540,6 +542,7 @@ async def get_config(current=Depends(get_current_admin)):
         "whatsapp_message": doc.get(
             "whatsapp_message", "Olá! Gostaria de solicitar um orçamento."
         ),
+        "phone": doc.get("phone", "+55 41 2112-2023"),
     }
 
 

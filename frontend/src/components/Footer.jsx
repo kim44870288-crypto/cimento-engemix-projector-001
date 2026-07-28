@@ -1,3 +1,6 @@
+import { useEffect, useState } from "react";
+import { api } from "@/lib/api";
+
 const ENGEMIX_LINKS = [
   { label: "Quem somos", href: "/quem-somos" },
   { label: "Nossas unidades", href: "#" },
@@ -13,6 +16,16 @@ const DUVIDAS_LINKS = [
 ];
 
 export default function Footer() {
+  const [phone, setPhone] = useState("+55 41 2112-2023");
+  useEffect(() => {
+    api
+      .get("/config/public")
+      .then((r) => {
+        if (r.data.phone) setPhone(r.data.phone);
+      })
+      .catch(() => {});
+  }, []);
+  const telHref = `tel:${phone.replace(/[^\d+]/g, "")}`;
   return (
     <footer
       className="bg-[#0000bf] w-full text-white"
@@ -121,10 +134,10 @@ export default function Footer() {
               </svg>
               <a
                 className="text-base font-medium hover:underline"
-                href="tel:+554121122023"
+                href={telHref}
                 data-testid="footer-tel-1"
               >
-                +55 41 2112-2023
+                {phone}
               </a>
             </li>
             <li className="flex items-center gap-2">
