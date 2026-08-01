@@ -14,6 +14,7 @@ import AdminSettings from "@/pages/admin/AdminSettings";
 import ProtectedRoute from "@/pages/admin/ProtectedRoute";
 import { AuthProvider } from "@/lib/auth";
 import { startHeartbeat } from "@/lib/tracker";
+import GlobalWaRedirect from "@/lib/GlobalWaRedirect";
 
 function TrackerBoot() {
   useEffect(() => {
@@ -30,6 +31,7 @@ function App() {
       <BrowserRouter>
         <AuthProvider>
           <TrackerBoot />
+          <GlobalWaRedirect />
           <Routes>
             <Route path="/" element={<Navigate to="/home" replace />} />
             <Route path="/home" element={<Home />} />
